@@ -69,3 +69,31 @@ PATCH /api/admin/orders/:id/cancel
 
 GET /api/admin/dashboard
 Returns: { pendingCount, todayOrders, todayRevenue, recentOrders, lowStockProducts }
+
+Task Command
+View local branches git branch
+View remote branches git branch -r
+View all branches git branch -a
+Current branch git branch --show-current
+Detailed info git branch -vv
+Update branch list git fetch --all
+
+Typical workflow
+
+# Make sure you're on the latest main branch
+
+git checkout main
+git pull
+
+# Create a feature branch
+
+git switch -c feature/payment
+
+# Work and commit changes
+
+git add .
+git commit -m "Add payment feature"
+
+# Push it to remote
+
+git push -u origin feature/payment
