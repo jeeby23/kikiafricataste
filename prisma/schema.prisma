@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PricingType {
+  FIXED
+  PER_KG
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("admins")
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  description  String?
+  pricingType  PricingType  @default(FIXED) @map("pricing_type")
+  price        Int?         // kobo — used when pricingType is FIXED
+  pricePerKg   Int?         @map("price_per_kg") // kobo — used when pricingType is PER_KG
+  stockQty     Int?         @default(0) @map("stock_qty")   // for FIXED items
+  stockKg      Float?       @default(0) @map("stock_kg")    // for PER_KG items
+  isActive     Boolean      @default(false) @map("is_active")
+  categoryId   String?      @map("category_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  category     Category?    @relation(fields: [categoryId], references: [id])
+  images       ProductImage[]
+  orderItems   OrderItem[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String  @map("product_id")
+  url       String
+  publicId  String  @map("public_id")
+  altText   String? @map("alt_text")
+  position  Int     @default(0)
+  isPrimary Boolean @default(false) @map("is_primary")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  orderNumber      String      @unique @map("order_number")
+  status           OrderStatus @default(PENDING_PAYMENT)
+  customerName     String      @map("customer_name")
+  customerEmail    String?     @map("customer_email")
+  customerWhatsapp String      @map("customer_whatsapp")
+  deliveryAddress  String      @map("delivery_address")
+  deliveryCity     String      @map("delivery_city")
+  deliveryState    String      @map("delivery_state")
+  notes            String?
+  subtotal         Int
+  deliveryFee      Int         @default(0) @map("delivery_fee")
+  total            Int
+  expiresAt        DateTime    @map("expires_at")
+  confirmedAt      DateTime?   @map("confirmed_at")
+  cancelledAt      DateTime?   @map("cancelled_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  items            OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  productId   String   @map("product_id")
+  pricingType PricingType @map("pricing_type")
+  quantity    Int?                        // for FIXED items
+  weightKg    Float?   @map("weight_kg") // for PER_KG items
+  unitPrice   Int      @map("unit_price") // snapshot at order time
+  subtotal    Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
