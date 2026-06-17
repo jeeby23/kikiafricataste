@@ -4,13 +4,15 @@ import { ok, err, requireAdmin } from "@/lib/api";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { response } = await requireAdmin(req);
   if (response) return response;
 
+  const { id } = await params;
+
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       items: {
         include: {

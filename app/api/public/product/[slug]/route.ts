@@ -4,10 +4,10 @@ import { ok, err } from "@/lib/api";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   const product = await prisma.product.findUnique({
-    where: { slug: params.slug, isActive: true },
+    where: { slug: (await params).slug, isActive: true },
     include: {
       images: { orderBy: { position: "asc" } },
       category: true,

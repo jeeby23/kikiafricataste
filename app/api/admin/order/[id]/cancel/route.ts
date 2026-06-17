@@ -5,13 +5,15 @@ import { sendOrderCancelled } from "@/lib/notifications";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { response } = await requireAdmin(req);
   if (response) return response;
 
+  const { id } = await params;
+
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { items: true },
   });
   if (!order) return err("Order not found", 404);
@@ -20,7 +22,7 @@ export async function PATCH(
 
   await prisma.$transaction(async (tx) => {
     await tx.order.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: "CANCELLED", cancelledAt: new Date() },
     });
 
@@ -43,6 +45,7 @@ export async function PATCH(
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
+    customerWhatsapp: order.customerWhatsapp,
   }).catch(console.error);
 
   return ok({ cancelled: true });
