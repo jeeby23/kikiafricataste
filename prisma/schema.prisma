@@ -22,10 +22,22 @@ enum OrderStatus {
   CANCELLED
 }
 
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  adminId   String   @map("admin_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
 model Admin {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String   @map("password_hash")
+  resetTokens PasswordResetToken[]
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("admins")
@@ -52,6 +64,8 @@ model Product {
   stockQty     Int?         @default(0) @map("stock_qty")   // for FIXED items
   stockKg      Float?       @default(0) @map("stock_kg")    // for PER_KG items
   isActive     Boolean      @default(false) @map("is_active")
+  minWeightKg  Float  @default(0.25) @map("min_weight_kg")
+stepWeightKg Float  @default(0.25) @map("step_weight_kg")
   categoryId   String?      @map("category_id")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
