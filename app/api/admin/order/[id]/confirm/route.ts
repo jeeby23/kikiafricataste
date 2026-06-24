@@ -29,7 +29,7 @@ export async function PATCH(
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
-    customerWhatsapp: order.customerWhatsapp,
+    customerWhatsapp: order.customerWhatsapp || "",
     total: order.total,
     items: order.items.map((i) => ({
       productName: i.product.name,
