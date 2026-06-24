@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import twilio from "twilio";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -66,6 +67,8 @@ export async function sendPaymentDetails(order: {
   customerWhatsapp: string;
   total: number;
   expiresAt: Date;
+  deliveryFee: number;
+  subtotal: number;
   items: OrderItemDetail[];
 }) {
   const itemsText = itemsToText(order.items);
@@ -87,25 +90,69 @@ Account Name: ${process.env.STORE_ACCOUNT_NAME}
 Use "${order.orderNumber}" as your transfer reference.
   `.trim();
 
-  if (order.customerWhatsapp) {
-    await sendWhatsApp(order.customerWhatsapp, whatsappText);
-  }
-
   if (order.customerEmail) {
     const html = `
-      <h2>Hi ${order.customerName}, thanks for your order!</h2>
-      <h3>Order: ${order.orderNumber}</h3>
-      ${itemsToHtml(order.items)}
-      <h3>Total: ${formatPrice(order.total)}</h3>
+  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
+    
+    <h2 style="color: #1a1a1a">Thank you for your order, ${order.customerName}! 🎉</h2>
+    
+    <p>We've received your order and it's currently being held for you. 
+    Please complete your bank transfer within <strong>30 minutes</strong> 
+    to secure your items.</p>
 
-      <h3>Bank Transfer Details</h3>
-      <p>Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
-      <p>Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
-      <p>Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
-      <p>Reference: <strong>${order.orderNumber}</strong></p>
+    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">
+      Order Summary — ${order.orderNumber}
+    </h3>
 
-      <p>⚠️ Pay before <strong>${order.expiresAt.toLocaleTimeString()}</strong> or your order will be cancelled.</p>
-    `;
+    ${itemsToHtml(order.items)}
+
+    <table style="width:100%; margin: 16px 0">
+      <tr>
+        <td>Subtotal</td>
+        <td style="text-align:right">${formatPrice(order.subtotal)}</td>
+      </tr>
+      <tr>
+        <td>Delivery</td>
+        <td style="text-align:right">${formatPrice(order.deliveryFee)}</td>
+      </tr>
+      <tr style="font-weight:bold; font-size:16px">
+        <td>Total</td>
+        <td style="text-align:right">${formatPrice(order.total)}</td>
+      </tr>
+    </table>
+
+    <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
+      <h3 style="margin-top:0">Payment Details</h3>
+      <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
+      <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
+      <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+      <p style="margin:4px 0">Amount: <strong>${formatPrice(order.total)}</strong></p>
+      <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
+    </div>
+
+    <div style="background:#fff8e1; border: 1px solid #ffe082; padding: 12px 16px; border-radius: 4px">
+      ⚠️ <strong>Payment deadline: ${order.expiresAt.toLocaleTimeString()}</strong><br/>
+      Your order will be automatically cancelled if payment is not received by this time.
+    </div>
+
+    <p style="margin-top: 24px">
+      Once you've made the transfer, please reply to this email with:
+      <ul>
+        <li>Your payment receipt or screenshot</li>
+        <li>Your name</li>
+        <li>Your order reference: <strong>${order.orderNumber}</strong></li>
+      </ul>
+    </p>
+
+    <p>Our team will confirm your order as soon as payment is verified.</p>
+
+    <p style="color:#888; font-size:13px; margin-top:32px; border-top:1px solid #eee; padding-top:16px">
+      If you have any questions, simply reply to this email.<br/>
+      Thank you for choosing Kiki African Taste 🌍
+    </p>
+
+  </div>
+`;
 
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL!,
@@ -140,10 +187,6 @@ Total paid: ${formatPrice(order.total)}
 We'll begin processing your delivery shortly.
   `.trim();
 
-  if (order.customerWhatsapp) {
-    await sendWhatsApp(order.customerWhatsapp, whatsappText);
-  }
-
   if (order.customerEmail) {
     const html = `
       <h2>Your order has been confirmed! 🎉</h2>
@@ -173,10 +216,6 @@ export async function sendOrderCancelled(order: {
 }) {
   const text = `Hi ${order.customerName}, your order ${order.orderNumber} has been cancelled because no payment was received within 45 minutes. You're welcome to place a new order anytime.`;
 
-  if (order.customerWhatsapp) {
-    await sendWhatsApp(order.customerWhatsapp, text);
-  }
-
   if (order.customerEmail) {
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL!,
@@ -194,6 +233,9 @@ export async function sendNewOrderAlert(order: {
   customerName: string;
   customerWhatsapp: string;
   total: number;
+  deliveryFee: number;
+  subtotal: number;
+  customerEmail: string;
   items: OrderItemDetail[];
 }) {
   const itemsText = itemsToText(order.items);
@@ -203,13 +245,55 @@ export async function sendNewOrderAlert(order: {
     to: process.env.ADMIN_EMAIL!,
     subject: `New order: ${order.orderNumber} — ${formatPrice(order.total)}`,
     html: `
-      <h2>New order received</h2>
-      <p>Order: <strong>${order.orderNumber}</strong></p>
-      <p>Customer: <strong>${order.customerName}</strong></p>
-      <p>WhatsApp: <strong>${order.customerWhatsapp}</strong></p>
-      ${itemsToHtml(order.items)}
-      <p>Total: <strong>${formatPrice(order.total)}</strong></p>
-    `,
+  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
+    
+    <h2 style="color: #1a1a1a">🛒 New Order Received — ${order.orderNumber}</h2>
+    
+    <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
+      <h3 style="margin-top:0">Check this account for payment</h3>
+      <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
+      <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
+      <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+      <p style="margin:4px 0">Expected Amount: <strong>${formatPrice(order.total)}</strong></p>
+      <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
+    </div>
+
+    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">Customer Details</h3>
+    <p style="margin:4px 0">Name: <strong>${order.customerName}</strong></p>
+    <p style="margin:4px 0">Email: <strong>${order.customerEmail}</strong></p>
+
+    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">Order Items</h3>
+    ${itemsToHtml(order.items)}
+
+    <table style="width:100%; margin: 16px 0">
+      <tr>
+        <td>Subtotal</td>
+        <td style="text-align:right">${formatPrice(order.subtotal)}</td>
+      </tr>
+      <tr>
+        <td>Delivery Fee</td>
+        <td style="text-align:right">${formatPrice(order.deliveryFee)}</td>
+      </tr>
+      <tr style="font-weight:bold; font-size:16px; border-top: 1px solid #eee">
+        <td>Total</td>
+        <td style="text-align:right">${formatPrice(order.total)}</td>
+      </tr>
+    </table>
+
+    <div style="background:#fff8e1; border: 1px solid #ffe082; padding: 12px 16px; border-radius: 4px">
+      ⚠️ This order expires in <strong>30 minutes</strong>. 
+      Confirm payment in the dashboard before then or it will be auto-cancelled.
+    </div>
+
+    <p style="margin-top: 24px">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/api/admin/order" 
+         style="background:#1a1a1a; color:#fff; padding:12px 24px; text-decoration:none; border-radius:4px">
+        View Order in Dashboard →
+      </a>
+    </p>
+
+  </div>
+`,
   });
 }
 
@@ -229,30 +313,4 @@ export async function sendPasswordResetEmail(email: string, token: string) {
       <p>This link expires in <strong>15 minutes</strong>.</p>
     `,
   });
-}
-
-// ─── WhatsApp sender (shared) ─────────────────────────────────────
-
-async function sendWhatsApp(to: string, message: string) {
-  const phone = to.replace(/\D/g, "");
-  const url = `https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: { body: message },
-    }),
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    console.error("WhatsApp send failed:", res.status, errorBody);
-  }
 }

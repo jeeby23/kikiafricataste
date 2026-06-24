@@ -2,10 +2,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ok, requireAdmin } from "@/lib/api";
 import { OrderStatus } from "@prisma/client";
+import { cancelExpiredOrders } from "@/lib/cancel-expired-orders";
 
 export async function GET(req: NextRequest) {
   const { response } = await requireAdmin(req);
   if (response) return response;
+
+  // safety net — catches anything cron-job.org missed
+  await cancelExpiredOrders();
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") as OrderStatus | null;
