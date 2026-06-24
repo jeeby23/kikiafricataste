@@ -21,8 +21,8 @@ const itemSchema = z.discriminatedUnion("pricingType", [
 
 const schema = z.object({
   customerName: z.string().min(1),
-  customerEmail: z.string().email().optional().or(z.literal("")),
-  customerWhatsapp: z.string().min(10),
+  customerEmail: z.string().email().or(z.literal("")),
+  customerWhatsapp: z.string().min(10).optional(),
   deliveryAddress: z.string().min(1),
   deliveryPostCode: z.string().min(1),
   deliveryState: z.string().min(1),
@@ -117,8 +117,8 @@ export async function POST(req: NextRequest) {
       data: {
         orderNumber,
         customerName: customerData.customerName,
-        customerEmail: customerEmail || null,
-        customerWhatsapp: customerData.customerWhatsapp,
+        customerEmail: customerEmail,
+        customerWhatsapp: customerData.customerWhatsapp || "",
         deliveryAddress: customerData.deliveryAddress,
         deliveryCity: customerData.deliveryPostCode,
         deliveryState: customerData.deliveryState,
@@ -156,7 +156,9 @@ export async function POST(req: NextRequest) {
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
-    customerWhatsapp: order.customerWhatsapp,
+    customerWhatsapp: order.customerWhatsapp || "",
+    subtotal: order.subtotal,
+    deliveryFee: order.deliveryFee,
     total: order.total,
     expiresAt: order.expiresAt,
     items: order.items.map((i) => ({
@@ -169,10 +171,14 @@ export async function POST(req: NextRequest) {
     })),
   }).catch(console.error);
 
+  // call in orders route
   sendNewOrderAlert({
     orderNumber: order.orderNumber,
     customerName: order.customerName,
-    customerWhatsapp: order.customerWhatsapp,
+    customerWhatsapp: order.customerWhatsapp || "",
+    customerEmail: order.customerEmail,
+    subtotal: order.subtotal,
+    deliveryFee: order.deliveryFee,
     total: order.total,
     items: order.items.map((i) => ({
       productName: i.product.name,
