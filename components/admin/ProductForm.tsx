@@ -7,7 +7,7 @@ type Product = {
   name: string;
   category: string;
   price: number;
-  unit: string; // "pack", "kg", "piece"
+  unit: string;
   description: string;
   primaryImage: File | null;
   secondaryImages: File[];
@@ -43,7 +43,6 @@ export default function ProductForm({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Upload images to cloudinary/supabase and save product
     console.log("Product Data:", form);
     alert("Product added successfully! (Demo)");
     onClose();
@@ -116,8 +115,6 @@ export default function ProductForm({ onClose }: { onClose: () => void }) {
             placeholder="6 pieces of premium smoked catfish..."
           />
         </div>
-
-        {/* Primary Image */}
         <div>
           <label className="block mb-2">Primary Image</label>
           <input type="file" accept="image/*" onChange={handlePrimaryImage} className="mb-3" />
@@ -125,8 +122,6 @@ export default function ProductForm({ onClose }: { onClose: () => void }) {
             <Image src={primaryPreview} alt="preview" width={200} height={200} className="rounded-lg" />
           )}
         </div>
-
-        {/* Secondary Images */}
         <div>
           <label className="block mb-2">Secondary Images (Thumbnails)</label>
           <input type="file" multiple accept="image/*" onChange={handleSecondaryImages} />

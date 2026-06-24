@@ -1,270 +1,323 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { ArrowLeft, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 
-export default function AddProduct() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    price: "",
-    stock: "",
-    description: "",
-    mainImage: null as File | null,
-    secondaryImages: [] as File[],
-    packSize: "",
-    pricePerPiece: "",
-  });
+import { useCreateProduct, useCategories } from '@/features/products/products.query'
+import { Product } from '@/types/products.types'
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+import { productFormSchema, type FormValues } from '@/schema/product.schema'
+import { ImagePanel } from '@/components/admin/product/image-panel'
+import { CategoryManager } from '@/components/admin/product/category-manager'
 
-    // 🔥 Prepare FormData (for backend later)
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("category", formData.category);
-    data.append("price", formData.price);
-    data.append("stock", formData.stock);
-    data.append("description", formData.description);
+export default function AddProductPage() {
+  const router = useRouter()
+  const createProduct = useCreateProduct()
+  const { data: categories = [] } = useCategories()
+  const [createdProduct, setCreatedProduct] = useState<Product | null>(null)
+  const [activeTab, setActiveTab] = useState<'general' | 'advanced'>('general')
 
-    if (formData.mainImage) {
-      data.append("mainImage", formData.mainImage);
-    }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: { pricingType: 'FIXED', isActive: false },
+  })
 
-    formData.secondaryImages.forEach((img) => {
-      data.append("secondaryImages", img);
-    });
+  const pricingType = watch('pricingType')
+  const isActive = watch('isActive')
+  const categoryId = watch('categoryId')
 
-    console.log("Product Data:", formData);
+  const submitForm = (isActiveOverride: boolean) => {
+    handleSubmit((values) => {
+      const payload = {
+        name: values.name,
+        description: values.description,
+        pricingType: values.pricingType,
+        price: values.price !== undefined ? Number(values.price) : undefined,
+        pricePerKg: values.pricePerKg !== undefined ? Number(values.pricePerKg) : undefined,
+        stockQty: values.stockQty !== undefined ? Number(values.stockQty) : undefined,
+        stockKg: values.stockKg !== undefined ? Number(values.stockKg) : undefined,
+        minWeightKg: values.minWeightKg !== undefined ? Number(values.minWeightKg) : undefined,
+        stepWeightKg: values.stepWeightKg !== undefined ? Number(values.stepWeightKg) : undefined,
+        categoryId: values.categoryId?.trim() || undefined,
+        isActive: isActiveOverride,
+      }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      createProduct.mutate(payload, {
+        onSuccess: (res) => {
+          if (res.error) {
+            alert(res.error)
+            return
+          }
+          if (payload.isActive) {
+            setCreatedProduct(res.data)
+          } else {
+            router.push('/admin/products')
+          }
+        },
+        onError: (err: any) => {
+          console.error('🔴 API ERROR:', err?.response?.data || err)
+          alert('Failed to create product (check console)')
+        },
+      })
+    })()
+  }
 
-    setLoading(false);
-    router.push("/admin/products");
-  };
+  if (createdProduct) {
+    return (
+      <ImagePanel
+        product={createdProduct}
+        onDone={() => router.push('/admin/products')}
+      />
+    )
+  }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Add Product</h1>
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white text-black p-6 rounded-lg shadow space-y-4"
-      >
-        {/* Product Name */}
-        <div>
-          <label className="block font-medium mb-1">Product Name *</label>
-          <input
-            type="text"
-            required
-            className="w-full border rounded p-2"
-            value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.target.value })
-            }
-          />
-        </div>
-
-        {/* Category */}
-        <div>
-          <label className="block font-medium mb-1">Category *</label>
-          <select
-            required
-            className="w-full border rounded p-2"
-            value={formData.category}
-            onChange={(e) =>
-              setFormData({ ...formData, category: e.target.value })
-            }
-          >
-            <option value="">Select Category</option>
-            <option value="Catfish">Catfish</option>
-            <option value="Ponmon">Ponmon</option>
-            <option value="Goat Meat">Goat Meat</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        {/* Pack Size & Price Per Piece */}
-        {(formData.category === "Catfish" ||
-          formData.category === "Ponmon") && (
-          <div className="grid grid-cols-2 gap-4">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Link href="/admin/products">
+              <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition">
+                <ArrowLeft className="w-4 h-4 text-gray-600" />
+              </button>
+            </Link>
             <div>
-              <label className="block font-medium mb-1">
-                Pack Size (pieces)
-              </label>
-              <input
-                type="number"
-                className="w-full border rounded p-2"
-                value={formData.packSize}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    packSize: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className="block font-medium mb-1">
-                Price Per Piece (₦)
-              </label>
-              <input
-                type="number"
-                className="w-full border rounded p-2"
-                value={formData.pricePerPiece}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    pricePerPiece: e.target.value,
-                  })
-                }
-              />
+              <h1 className="text-xl font-semibold text-gray-900">Add New Product</h1>
+              <p className="text-xs text-gray-400 mt-0.5">Fill in the details below</p>
             </div>
           </div>
-        )}
 
-        {/* Price */}
-        <div>
-          <label className="block font-medium mb-1">Price (₦) *</label>
-          <input
-            type="number"
-            required
-            className="w-full border rounded p-2"
-            value={formData.price}
-            onChange={(e) =>
-              setFormData({ ...formData, price: e.target.value })
-            }
-          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => submitForm(false)}
+              disabled={createProduct.isPending}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+              Save Draft
+            </button>
+            <button
+              type="button"
+              onClick={() => submitForm(true)}
+              disabled={createProduct.isPending}
+              className="px-5 py-2 text-sm font-semibold text-white bg-black/70 rounded-lg hover:bg-black/80 transition disabled:opacity-50"
+            >
+              {createProduct.isPending ? 'Publishing...' : 'Publish'}
+            </button>
+          </div>
         </div>
 
-        {/* Stock */}
-        <div>
-          <label className="block font-medium mb-1">
-            Stock Quantity *
-          </label>
-          <input
-            type="number"
-            required
-            className="w-full border rounded p-2"
-            value={formData.stock}
-            onChange={(e) =>
-              setFormData({ ...formData, stock: e.target.value })
-            }
-          />
+        <div className="flex items-center gap-2 mb-6">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+            isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+            {isActive ? 'Will be published' : 'Draft'}
+          </span>
         </div>
 
-        {/* Description */}
-        <div>
-          <label className="block font-medium mb-1">
-            Description
-          </label>
-          <textarea
-            className="w-full border rounded p-2 h-24"
-            value={formData.description}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                description: e.target.value,
-              })
-            }
-          />
-        </div>
+        {/* Main Grid Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-7 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">Product Details</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Key info to describe your product.</p>
+                </div>
+              </div>
 
-        {/* Main Image */}
-        <div>
-          <label className="block font-medium mb-1">
-            Main Image *
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            required
-            className="w-full border rounded p-2"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setFormData({
-                  ...formData,
-                  mainImage: file,
-                });
-              }
-            }}
-          />
+              <div className="flex border border-gray-200 rounded-lg p-0.5 mb-6 bg-gray-50">
+                {(['general', 'advanced'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 py-2 text-sm font-medium rounded-md transition capitalize ${
+                      activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
 
-          {formData.mainImage && (
-            <img
-              src={URL.createObjectURL(formData.mainImage)}
-              alt="Preview"
-              className="mt-2 w-32 h-32 object-cover rounded"
+              {activeTab === 'general' && (
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Product Name <span className="text-red-500">*</span>
+                    </label>
+                    <Input {...register('name')} placeholder="e.g. Goat Meat" className="text-gray-700" />
+                    {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Pricing Type <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={pricingType}
+                        onValueChange={(val) => setValue('pricingType', val as 'FIXED' | 'PER_KG', { shouldValidate: true })}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Choose pricing type" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="FIXED">Fixed Price</SelectItem>
+                          <SelectItem value="PER_KG">Per KG</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                      <Select value={categoryId ?? ''} onValueChange={(val) => setValue('categoryId', val)}>
+                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {pricingType === 'FIXED' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Price (£) <span className="text-red-500">*</span>
+                        </label>
+                        <Input type="number" {...register('price')} placeholder="e.g. 29.99" className="text-gray-700" />
+                        {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price.message}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Stock Quantity</label>
+                        <Input type="number" {...register('stockQty')} placeholder="e.g. 50" className="text-gray-700" />
+                      </div>
+                    </div>
+                  )}
+
+                  {pricingType === 'PER_KG' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Price per KG (£) <span className="text-red-500">*</span>
+                        </label>
+                        <Input type="number" {...register('pricePerKg')} placeholder="e.g. 15.00" className="text-gray-700" />
+                        {errors.pricePerKg && <p className="text-xs text-red-500 mt-1">{errors.pricePerKg.message}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Stock (KG)</label>
+                        <Input type="number" step="0.01" {...register('stockKg')} placeholder="e.g. 20.5" className="text-gray-700" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                    <Textarea
+                      {...register('description')}
+                      placeholder="Write a short description..."
+                      className="h-28 resize-none text-gray-700"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'advanced' && (
+                <div className="space-y-5">
+                  {pricingType === 'PER_KG' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Min Weight (KG)</label>
+                        <Input type="number" step="0.01" {...register('minWeightKg')} placeholder="0.25" className="text-gray-700" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Step Weight (KG)</label>
+                        <Input type="number" step="0.01" {...register('stepWeightKg')} placeholder="0.25" className="text-gray-700" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Publish immediately</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Toggle to make product visible to customers</p>
+                    </div>
+                    <Switch checked={isActive} onCheckedChange={(val) => setValue('isActive', val)} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right hand sidebar actions */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Visibility</h3>
+              <p className="text-xs text-gray-400 mb-4">Control visibility parameters</p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  {isActive ? 'Visible' : 'Hidden (Draft)'}
+                </span>
+                <Switch checked={isActive} onCheckedChange={(val) => setValue('isActive', val)} />
+              </div>
+            </div>
+
+            <CategoryManager
+              categories={categories}
+              categoryId={categoryId}
+              onSelect={(id) => setValue('categoryId', id)}
             />
-          )}
-        </div>
 
-        {/* Secondary Images */}
-        <div>
-          <label className="block font-medium mb-1">
-            Secondary Images
-          </label>
-
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="w-full border rounded p-2"
-            onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              setFormData({
-                ...formData,
-                secondaryImages: [
-                  ...formData.secondaryImages,
-                  ...files,
-                ],
-              });
-            }}
-          />
-
-          <div className="mt-2 flex flex-wrap gap-2">
-            {formData.secondaryImages.map((file, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={`Secondary ${index}`}
-                  className="w-20 h-20 object-cover rounded"
-                />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <div className="space-y-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      secondaryImages:
-                        formData.secondaryImages.filter(
-                          (_, i) => i !== index
-                        ),
-                    });
-                  }}
-                  className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center"
+                  onClick={() => submitForm(false)}
+                  disabled={createProduct.isPending}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
                 >
-                  ×
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => submitForm(true)}
+                  disabled={createProduct.isPending}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-black/70 text-white text-sm font-medium hover:bg-black/80 transition disabled:opacity-50"
+                >
+                  Publish Product
                 </button>
               </div>
-            ))}
+            </div>
           </div>
         </div>
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Adding..." : "Add Product"}
-        </button>
-      </form>
+      </div>
     </div>
-  );
+  )
 }

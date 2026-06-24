@@ -1,6 +1,6 @@
-"use client";
+'use client'
 
-const Container = ({ children, className = "" }) => {
+const Container = ({ children, className = '' }) => {
   return (
     <div
       className={`
@@ -13,7 +13,7 @@ const Container = ({ children, className = "" }) => {
     >
       {children}
     </div>
-  );
-};
+  )
+}
 
-export default Container;
+export default Container

@@ -22,13 +22,11 @@ export default function OrderConfirmation() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get order from localStorage (you can replace this with API fetch later)
     const storedOrder = localStorage.getItem(`order_${orderId}`)
 
     if (storedOrder) {
       setOrder(JSON.parse(storedOrder))
     } else {
-      // Fallback if no data found
       router.push('/checkout')
     }
     setLoading(false)
@@ -57,7 +55,6 @@ export default function OrderConfirmation() {
       
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-          {/* Left - Main Content */}
           <div className="lg:col-span-3 space-y-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -70,7 +67,6 @@ export default function OrderConfirmation() {
               <p className="text-lg text-gray-600">Your order is confirmed for pickup.</p>
             </div>
 
-            {/* Google Map */}
             <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white">
               <iframe
                 src={PICKUP_LOCATION.mapEmbed}
@@ -96,7 +92,6 @@ export default function OrderConfirmation() {
               </div>
             </div>
 
-            {/* Confirmation Message */}
             <div className="bg-white rounded-2xl p-8 space-y-6">
               <h3 className="font-semibold text-lg">Your order is confirmed</h3>
               <p className="text-gray-600">
@@ -126,8 +121,6 @@ export default function OrderConfirmation() {
                 </div>
               </div>
             </div>
-
-            {/* Order Details */}
             <div className="bg-white rounded-2xl p-8">
               <h3 className="font-semibold text-lg mb-6">Order Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 text-sm">
@@ -152,7 +145,7 @@ export default function OrderConfirmation() {
             </div>
           </div>
 
-          {/* Right - Order Summary */}
+
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-8 sticky top-6">
               <h3 className="font-semibold text-lg mb-6">Your Order</h3>

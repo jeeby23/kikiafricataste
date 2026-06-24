@@ -5,9 +5,11 @@ export interface CartItem {
   id: string
   name: string
   image: string
-  price: number // in GBP £
+  price: number
   qty: number
+  totalPrice: number
   detail?: string
+  pricingType?: 'FIXED' | 'PER_KG'
 }
 
 interface CartState {
@@ -21,37 +23,61 @@ interface CartState {
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
-      items: [
-        // seed data — remove when wiring real products
-        { id: '1', name: 'Catfish (Dried)', image: '/kiki-fish-01.webp', price: 4.5, qty: 1, detail: '6 pieces / pack' },
-        { id: '2', name: 'Goat Meat', image: '/kiki-goatmeat.webp', price: 9.99, qty: 2, detail: 'per kg' },
-      ],
+      items: [],
 
       addItem: (item) =>
         set((state) => {
           const existing = state.items.find((i) => i.id === item.id)
+
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.id === item.id ? { ...i, qty: i.qty + item.qty } : i
+                i.id === item.id
+                  ? {
+                      ...i,
+                      totalPrice: i.totalPrice + item.price, // ✅ only price increases
+                    }
+                  : i
               ),
             }
           }
-          return { items: [...state.items, item] }
+
+          return {
+            items: [
+              ...state.items,
+              {
+                ...item,
+                qty: 1,
+                totalPrice: item.price,
+              },
+            ],
+          }
         }),
 
       updateQty: (id, delta) =>
         set((state) => ({
           items: state.items
-            .map((i) => (i.id === id ? { ...i, qty: i.qty + delta } : i))
+            .map((i) =>
+              i.id === id
+                ? {
+                    ...i,
+                    qty: Math.max(1, i.qty + delta),
+                    totalPrice: Math.max(0, i.totalPrice + i.price * delta),
+                  }
+                : i
+            )
             .filter((i) => i.qty > 0),
         })),
 
       removeItem: (id) =>
-        set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
+        set((state) => ({
+          items: state.items.filter((i) => i.id !== id),
+        })),
 
       clearCart: () => set({ items: [] }),
     }),
-    { name: 'kiki-cart' }
+    {
+      name: 'kiki-cart',
+    }
   )
 )

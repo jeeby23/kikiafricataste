@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import Providers from "./provider";
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${barlow.variable} ${playfair.variable}`}>
       <body className="min-h-screen font-barlow">
-        {children}
+      <Providers> {children}</Providers>  
       </body>
     </html>
   );
