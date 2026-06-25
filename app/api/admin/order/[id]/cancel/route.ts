@@ -16,6 +16,7 @@ export async function PATCH(
     where: { id },
     include: { items: true },
   });
+
   if (!order) return err("Order not found", 404);
   if (order.status === "CONFIRMED")
     return err("Cannot cancel a confirmed order");
