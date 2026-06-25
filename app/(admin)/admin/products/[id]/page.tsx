@@ -272,7 +272,7 @@ export default function EditProductPage() {
                 )()
               }}
               disabled={updateProduct.isPending}
-              className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+              className="px-5 py-2 text-sm font-semibold text-white bg-black/70 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
               {updateProduct.isPending ? 'Saving...' : 'Save Changes'}
             </button>
@@ -336,7 +336,7 @@ export default function EditProductPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Pricing Type <span className="text-red-500">*</span>
@@ -353,8 +353,8 @@ export default function EditProductPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="FIXED">Fixed Price</SelectItem>
-                          <SelectItem value="PER_KG">Per KG</SelectItem>
+                          <SelectItem value="FIXED" className='text-gray-700'>Fixed Price</SelectItem>
+                          <SelectItem value="PER_KG" className='text-gray-700'>Per KG</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -382,7 +382,7 @@ export default function EditProductPage() {
                   </div>
 
                   {pricingType === 'FIXED' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 className='text-gray-700'">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Price (£) <span className="text-red-500">*</span>
@@ -391,7 +391,7 @@ export default function EditProductPage() {
                           type="number"
                           {...register('price')}
                           placeholder="e.g. 29.99"
-                          className="text-gray-600"
+                          className="text-gray-700"
                         />
                         {errors.price && (
                           <p className="text-xs text-red-500 mt-1">{errors.price.message}</p>
@@ -417,7 +417,7 @@ export default function EditProductPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Price per KG (£) <span className="text-red-500">*</span>
                         </label>
-                        <Input type="number" {...register('pricePerKg')} placeholder="e.g. 15.00" />
+                        <Input type="number" {...register('pricePerKg')} placeholder="e.g. 15.00" className='text-gray-700' />
                         {errors.pricePerKg && (
                           <p className="text-xs text-red-500 mt-1">{errors.pricePerKg.message}</p>
                         )}
@@ -431,6 +431,7 @@ export default function EditProductPage() {
                           step="0.01"
                           {...register('stockKg')}
                           placeholder="e.g. 20.5"
+                          className='text-gray-700'
                         />
                       </div>
                     </div>
@@ -462,6 +463,7 @@ export default function EditProductPage() {
                           step="0.01"
                           {...register('minWeightKg')}
                           placeholder="0.25"
+                          className='text-gray-700'
                         />
                       </div>
                       <div>
@@ -473,6 +475,7 @@ export default function EditProductPage() {
                           step="0.01"
                           {...register('stepWeightKg')}
                           placeholder="0.25"
+                           className='text-gray-700'
                         />
                       </div>
                     </div>

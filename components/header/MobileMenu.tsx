@@ -13,12 +13,12 @@ export default function MobileMenu({
   onClose: () => void
   onCartOpen: () => void
 }) {
-  const cartCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.qty, 0))
+const cartCount = useCartStore((s) => s.items.length)
 
   return (
     <>
       {open && (
-        <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={onClose} />
       )}
       <div className={`fixed top-0 right-0 h-full w-[80%] sm:w-1/2 bg-white z-50 md:hidden text-black transform transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="h-full flex flex-col">

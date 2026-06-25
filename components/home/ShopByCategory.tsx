@@ -17,20 +17,19 @@ const ShopByCategory = () => {
     if (!sectionRef.current || !bgRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Background Image Parallax + Zoom
+     
       gsap.to(bgRef.current, {
-        scale: 1.12,           // subtle zoom in
-        y: "-15%",             // parallax upward movement
+        scale: 1.12,           
+        y: "-15%",             
         ease: "none",
         scrollTrigger: {
           trigger: sectionRef.current,
           start: "top bottom",
           end: "bottom top",
-          scrub: 1.2,          // smooth scroll-linked animation
+          scrub: 1.2,        
         },
       });
 
-      // Content fade + slide up
       gsap.fromTo(
         contentRef.current,
         { opacity: 0, y: 60 },
@@ -53,7 +52,7 @@ const ShopByCategory = () => {
 
   return (
     <>
-      <div className="w-full bg-white pb-16 md:pb-24" />
+      <div className="w-full bg-white pb-10 md:pb-24" />
       <section 
         ref={sectionRef}
         className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden flex items-center justify-center bg-white"

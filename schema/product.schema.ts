@@ -5,12 +5,46 @@ export const productFormSchema = z
     name: z.string().min(1, 'Product name is required'),
     description: z.string().optional(),
     pricingType: z.enum(['FIXED', 'PER_KG']),
-    price: z.coerce.number({ error: 'Must be a number' }).positive().optional(),
-    pricePerKg: z.coerce.number({ error: 'Must be a number' }).positive().optional(),
-    stockQty: z.coerce.number({ error: 'Must be a number' }).int().min(0).optional(),
-    stockKg: z.coerce.number({ error: 'Must be a number' }).min(0).optional(),
-    minWeightKg: z.coerce.number({ error: 'Must be a number' }).positive().optional(),
-    stepWeightKg: z.coerce.number({ error: 'Must be a number' }).positive().optional(),
+    price: z.preprocess(
+      (val) => (val === '' ? undefined : val),
+
+      z.coerce.number().positive().optional(),
+    ),
+   pricePerKg: z.preprocess(
+
+  (v) => v === '' ? undefined : v,
+
+  z.coerce.number().positive().optional()
+
+),
+  stockQty: z.preprocess(
+
+  (v) => v === '' ? undefined : v,
+
+  z.coerce.number().int().min(0).optional()
+
+),
+ stockKg: z.preprocess(
+
+  (v) => v === '' ? undefined : v,
+
+  z.coerce.number().min(0).optional()
+
+),
+   minWeightKg: z.preprocess(
+
+  (v) => v === '' ? undefined : v,
+
+  z.coerce.number().positive().optional()
+
+),
+   stepWeightKg: z.preprocess(
+
+  (v) => v === '' ? undefined : v,
+
+  z.coerce.number().positive().optional()
+
+),
     categoryId: z.string().optional(),
     isActive: z.boolean().default(false),
   })
@@ -19,7 +53,11 @@ export const productFormSchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Price is required', path: ['price'] })
     }
     if (data.pricingType === 'PER_KG' && !data.pricePerKg) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Price per kg is required', path: ['pricePerKg'] })
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Price per kg is required',
+        path: ['pricePerKg'],
+      })
     }
   })
 

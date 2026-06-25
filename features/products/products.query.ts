@@ -1,28 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  getProducts, getProductBySlug, getAdminProducts,
+  getProducts, getProductBySlug, getRelatedProducts, getAdminProducts,
   getCategories, createCategory, updateCategory, deleteCategory,
   createProduct, updateProduct, deleteProduct,
-  toggleProductStatus, uploadProductImage, deleteProductImage,
+  toggleProductStatus, uploadProductImage, deleteProductImage,draftProduct,
 } from './products.api'
 import { CreateProductInput } from '@/types/products.types'
 
 export const useProducts = (page = 1, limit = 4, search = '') => {
-
   return useQuery({
     queryKey: ['products', page, limit, search],
     queryFn: () => getProducts(page, limit, search),
-    staleTime: 1000 * 60 * 60, 
-    gcTime: 1000 * 60 * 60 * 24, 
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 24,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    
     placeholderData: (prev) => prev,
-
   })
-
 }
+
 export const useAdminProducts = (page = 1, search = '') => {
   return useQuery({
     queryKey: ['admin-products', page, search],
@@ -39,6 +36,25 @@ export const useProduct = (slug: string) => {
   })
 }
 
+/**
+ * Related products for a given slug.
+ * - Enabled only when slug is available.
+ * - Long staleTime since related products rarely change.
+ * - Prefetch-friendly: queryKey includes slug + limit so sibling pages
+ *   can prefetch via queryClient.prefetchQuery with the same key.
+ */
+export const useRelatedProducts = (slug: string, limit = 4) => {
+  return useQuery({
+    queryKey: ['related-products', slug, limit],
+    queryFn: () => getRelatedProducts(slug, limit),
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 30,   // 30 min — related lists don't change often
+    gcTime:    1000 * 60 * 60,    // keep in cache 1 hr
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 export const useCategories = () => {
   return useQuery({
     queryKey: ['categories'],
@@ -51,12 +67,8 @@ export const useCreateCategory = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (name: string) => createCategory(name),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
-    },
-    onError: (err: any) => {
-      console.error('❌ CREATE CATEGORY ERROR:', err?.response?.data || err)
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    onError: (err: any) => console.error('❌ CREATE CATEGORY ERROR:', err?.response?.data || err),
   })
 }
 
@@ -64,12 +76,8 @@ export const useUpdateCategory = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => updateCategory(id, name),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
-    },
-    onError: (err: any) => {
-      console.error('❌ UPDATE CATEGORY ERROR:', err?.response?.data || err)
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    onError: (err: any) => console.error('❌ UPDATE CATEGORY ERROR:', err?.response?.data || err),
   })
 }
 
@@ -77,12 +85,8 @@ export const useDeleteCategory = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteCategory(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
-    },
-    onError: (err: any) => {
-      console.error('❌ DELETE CATEGORY ERROR:', err?.response?.data || err)
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+    onError: (err: any) => console.error('❌ DELETE CATEGORY ERROR:', err?.response?.data || err),
   })
 }
 
@@ -90,12 +94,8 @@ export const useCreateProduct = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateProductInput) => createProduct(data),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-    },
-    onError: (err: any) => {
-      console.error('❌ CREATE PRODUCT ERROR:', err?.response?.data || err)
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
+    onError: (err: any) => console.error('❌ CREATE PRODUCT ERROR:', err?.response?.data || err),
   })
 }
 
@@ -104,40 +104,53 @@ export const useUpdateProduct = () => {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<CreateProductInput> }) =>
       updateProduct(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
+    onError: (err: any) => console.error('❌ UPDATE PRODUCT ERROR:', err?.response?.data || err),
+  })
+}
+
+export const useDraftProduct = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => draftProduct(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+      queryClient.invalidateQueries({
+        queryKey: ['admin-products'],
+      })
     },
+
     onError: (err: any) => {
-      console.error('❌ UPDATE PRODUCT ERROR:', err?.response?.data || err)
+      console.error(
+        '❌ DRAFT PRODUCT ERROR:',
+        err?.response?.data || err
+      )
     },
   })
 }
 
 export const useDeleteProduct = () => {
-  const queryClient = useQueryClient();
-
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteProduct(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({
+        queryKey: ['admin-products'],
+      })
     },
     onError: (err: any) => {
-      console.error('❌ DELETE PRODUCT ERROR:', err?.response?.data || err);
-      alert('Failed to delete product. Please try again.');
+      console.error(
+        '❌ DELETE PRODUCT ERROR:',
+        err?.response?.data || err
+      )
     },
-  });
-};
-
+  })
+}
 export const useToggleProduct = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => toggleProductStatus(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-    },
-    onError: (err: any) => {
-      console.error('❌ TOGGLE ERROR:', err?.response?.data || err)
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
+    onError: (err: any) => console.error('❌ TOGGLE ERROR:', err?.response?.data || err),
   })
 }
 
@@ -146,9 +159,7 @@ export const useUploadProductImage = (productId: string) => {
   return useMutation({
     mutationFn: ({ file, altText }: { file: File; altText?: string }) =>
       uploadProductImage(productId, file, altText),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
   })
 }
 
@@ -156,8 +167,6 @@ export const useDeleteProductImage = (productId: string) => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (imageId: string) => deleteProductImage(productId, imageId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-products'] }),
   })
 }

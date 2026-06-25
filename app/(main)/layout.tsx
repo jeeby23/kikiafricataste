@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Barlow } from "next/font/google";
 import Header from "@/components/header";
 import { Toaster } from "sonner";
+
 const barlow = Barlow({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],

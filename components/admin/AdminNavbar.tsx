@@ -26,15 +26,13 @@ export default function AdminNavbar({ onMenuClick, showMobileMenu }: AdminNavbar
   ]
   const unreadCount = notifications.filter((n) => !n.read).length
 
-  // Fire custom event so the current page can react to search input
   const handleSearch = useCallback(
     (value: string) => {
       setSearchValue(value)
-      // Dispatch to current page
       window.dispatchEvent(
         new CustomEvent('admin:search', { detail: value })
       )
-      // If not already on a searchable page, navigate to products
+
       if (!pathname?.startsWith('/admin/products') && value.trim()) {
         router.push('/admin/products')
       }
@@ -87,7 +85,7 @@ export default function AdminNavbar({ onMenuClick, showMobileMenu }: AdminNavbar
           </button>
           <div className="w-px h-5 bg-gray-200 mx-2" />
           <div className="relative">
-            <button
+            {/* <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
               aria-label="Notifications"
@@ -96,7 +94,7 @@ export default function AdminNavbar({ onMenuClick, showMobileMenu }: AdminNavbar
               {unreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
               )}
-            </button>
+            </button> */}
 
             {showNotifications && (
               <>
@@ -129,12 +127,12 @@ export default function AdminNavbar({ onMenuClick, showMobileMenu }: AdminNavbar
                     ))}
                   </div>
                   <div className="px-4 py-3 border-t border-gray-50 text-center">
-                    <Link
+                    {/* <Link
                       href="/admin/notifications"
                       className="text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors"
                     >
                       See all notifications
-                    </Link>
+                    </Link> */}
                   </div>
                 </div>
               </>

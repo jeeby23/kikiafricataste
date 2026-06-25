@@ -1,3 +1,5 @@
+'use client'
+
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -9,7 +11,7 @@ export interface CartItem {
   qty: number
   totalPrice: number
   detail?: string
-  pricingType?: 'FIXED' | 'PER_KG'
+  pricingType: 'FIXED' | 'PER_KG'   // ← This must be saved
 }
 
 interface CartState {
@@ -29,43 +31,43 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           const existing = state.items.find((i) => i.id === item.id)
 
+          const newItem = {
+            ...item,
+          pricingType: item.pricingType,   // ← Ensure it's always set
+            qty: item.qty || 1,
+            totalPrice: (item.price || 0) * (item.qty || 1),
+          }
+
           if (existing) {
+            const newQty = existing.qty + newItem.qty
             return {
               items: state.items.map((i) =>
                 i.id === item.id
-                  ? {
-                      ...i,
-                      totalPrice: i.totalPrice + item.price, // ✅ only price increases
-                    }
+                  ? { ...i, qty: newQty, totalPrice: newQty * i.price }
                   : i
               ),
             }
           }
 
           return {
-            items: [
-              ...state.items,
-              {
-                ...item,
-                qty: 1,
-                totalPrice: item.price,
-              },
-            ],
+            items: [...state.items, newItem],
           }
         }),
 
       updateQty: (id, delta) =>
         set((state) => ({
           items: state.items
-            .map((i) =>
-              i.id === id
-                ? {
-                    ...i,
-                    qty: Math.max(1, i.qty + delta),
-                    totalPrice: Math.max(0, i.totalPrice + i.price * delta),
-                  }
-                : i
-            )
+            .map((i) => {
+              if (i.id === id) {
+                const newQty = Math.max(1, i.qty + delta)
+                return {
+                  ...i,
+                  qty: newQty,
+                  totalPrice: newQty * i.price,
+                }
+              }
+              return i
+            })
             .filter((i) => i.qty > 0),
         })),
 
@@ -76,8 +78,6 @@ export const useCartStore = create<CartState>()(
 
       clearCart: () => set({ items: [] }),
     }),
-    {
-      name: 'kiki-cart',
-    }
+    { name: 'kiki-cart' }
   )
 )

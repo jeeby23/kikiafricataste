@@ -7,7 +7,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { Button } from '@/components/ui/button'
 import Container from '@/components/Container'
-
+import { FaInstagram } from 'react-icons/fa'
 gsap.registerPlugin(ScrollTrigger)
 
 const StoreInfo = () => {
@@ -75,7 +75,7 @@ const StoreInfo = () => {
 
   return (
     <section ref={sectionRef} className="relative w-full">
-      <div className="bg-white h-10" />
+      <div className="bg-white " />
 
       <div className="relative w-full h-[500px] md:h-[600px] lg:h-[650px] overflow-hidden flex items-center">
         <div ref={bgRef} className="absolute inset-0 -z-10">
@@ -99,40 +99,41 @@ const StoreInfo = () => {
                 Our Store
               </h2>
               <p className="text-sm md:text-base text-neutral-600 leading-relaxed tracking-wide">
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Fugiat laboriosam iste,
-                reiciendis obcaecati possimus commodi!
+                Kiki African Taste brings authentic African food products and premium meats directly
+                to your doorstep. We are committed to quality, freshness, and excellent customer
+                service for families across the UK.
               </p>
             </div>
 
-            <div className="border-t border-neutral-100 pt-4">
+            {/* <div className="border-t border-neutral-100 pt-4">
               <p className="text-sm md:text-base text-neutral-700 tracking-wide">
                 <span className="font-medium">Mon - Sat</span>, 9.00am - 5.00pm
               </p>
-            </div>
+            </div> */}
+            <div className="border-t border-neutral-100 pt-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm md:text-base text-neutral-600">
+                <span className="font-medium">WhatsApp:</span>
 
-            <div className="flex flex-col gap-2 border-t border-neutral-100 pt-4 text-sm md:text-base text-neutral-600 tracking-wide">
-              <p>
-                Call or WhatsApp{' '}
                 <Link
-                  href="https://wa.me/2349039376252"
-                  className="hover:text-black font-medium transition-colors"
+                  href="https://wa.me/447742846710"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-black transition-colors"
                 >
-                  +234 903 937 6252
+                  +44 7742 846710
                 </Link>
-              </p>
+              </div>
 
-              <p>
-                WhatsApp{' '}
-                <Link
-                  href="https://wa.me/2349121784360"
-                  className="hover:text-black font-medium transition-colors"
-                  target="_blank"
-                >
-                  +234 912 178 4360
-                </Link>{' '}
-                <span className="text-neutral-400">(Asoebi)</span>
-              </p>
+              <Link
+                href="https://www.instagram.com/kikiafricanstore001?igsh=MWFvZjNlMHE0dG1icw%3D%3D&utm_source=qr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-pink-600 transition-colors"
+              >
+                <FaInstagram size={18} />
+
+                <span>@kikiafricanstore001</span>
+              </Link>
             </div>
 
             <div className="pt-2">

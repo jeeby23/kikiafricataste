@@ -48,6 +48,8 @@ export default function AddProductPage() {
   const categoryId = watch('categoryId')
 
   const submitForm = (isActiveOverride: boolean) => {
+     console.log("submitForm called")
+     
     handleSubmit((values) => {
       const payload = {
         name: values.name,
@@ -62,6 +64,7 @@ export default function AddProductPage() {
         categoryId: values.categoryId?.trim() || undefined,
         isActive: isActiveOverride,
       }
+      console.log("payload", payload)
 
       createProduct.mutate(payload, {
         onSuccess: (res) => {
@@ -121,7 +124,13 @@ export default function AddProductPage() {
             </button>
             <button
               type="button"
-              onClick={() => submitForm(true)}
+              onClick={() => {
+
+  console.log("🔥 Publish button clicked")
+
+  submitForm(true)
+
+}}
               disabled={createProduct.isPending}
               className="px-5 py-2 text-sm font-semibold text-white bg-black/70 rounded-lg hover:bg-black/80 transition disabled:opacity-50"
             >

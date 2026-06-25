@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Barlow, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Providers from "./provider";
-
+import FloatingWhatsApp from '@/components/common/FloatingWhatsApp'
 const barlow = Barlow({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -27,7 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${barlow.variable} ${playfair.variable}`}>
       <body className="min-h-screen font-barlow">
-      <Providers> {children}</Providers>  
+      <Providers> 
+        {children}
+          <FloatingWhatsApp />
+        </Providers>  
       </body>
     </html>
   );
