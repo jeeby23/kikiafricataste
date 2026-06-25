@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ok, err, requireAdmin } from "@/lib/api";
 import { sendOrderCancelled } from "@/lib/notifications";
-import { Prisma } from "@prisma/client";
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -19,10 +19,8 @@ export async function PATCH(
   if (!order) return err("Order not found", 404);
   if (order.status === "CONFIRMED")
     return err("Cannot cancel a confirmed order");
-type TransactionClient = Parameters<
-  Parameters<typeof prisma.$transaction>[0]
->[0];
-await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+
+  await prisma.$transaction(async (tx) => {
     await tx.order.update({
       where: { id },
       data: { status: "CANCELLED", cancelledAt: new Date() },
