@@ -19,7 +19,9 @@ export async function PATCH(
   if (!order) return err("Order not found", 404);
   if (order.status === "CONFIRMED")
     return err("Cannot cancel a confirmed order");
-
+type TransactionClient = Parameters<
+  Parameters<typeof prisma.$transaction>[0]
+>[0];
 await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.order.update({
       where: { id },
