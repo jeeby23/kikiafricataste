@@ -27,7 +27,6 @@ GET  /api/public/product/:slug/related?limit=4
 ```
 
 ### Categories
-
 ```
 GET  /api/public/category
 ```
@@ -293,7 +292,6 @@ PATCH /api/admin/order/:id/cancel
 **Order status values:** `PENDING_PAYMENT` | `CONFIRMED` | `CANCELLED`
 
 **Filter examples:**
-
 ```
 /api/admin/order?status=PENDING_PAYMENT
 /api/admin/order?from=2026-06-01&to=2026-06-30
