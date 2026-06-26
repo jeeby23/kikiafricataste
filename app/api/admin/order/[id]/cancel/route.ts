@@ -25,15 +25,10 @@ export async function PATCH(
 await prisma.$transaction(
 
   async (
-
     tx: Parameters<typeof prisma.$transaction>[0] extends (
-
       arg: infer T
-
     ) => unknown
-
       ? T
-
       : never
   ) => {
     await tx.order.update({
