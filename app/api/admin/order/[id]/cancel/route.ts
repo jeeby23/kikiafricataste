@@ -22,7 +22,20 @@ export async function PATCH(
     return err("Cannot cancel a confirmed order");
 
   // Fixed: Use proper typing without importing Prisma
-  await prisma.$transaction(async (tx) => {
+await prisma.$transaction(
+
+  async (
+
+    tx: Parameters<typeof prisma.$transaction>[0] extends (
+
+      arg: infer T
+
+    ) => unknown
+
+      ? T
+
+      : never
+  ) => {
     await tx.order.update({
       where: { id },
       data: { status: "CANCELLED", cancelledAt: new Date() },
