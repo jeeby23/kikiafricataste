@@ -29,26 +29,21 @@ export default function ProductInfo({
 
   const lineTotal = `£${(price * qty).toFixed(2)}`
   
-  // Conditional rule matching your request for "goat meat" items
   const isGoatMeat = product.name.toLowerCase().includes('goat meat')
-  const presets = [2, 5, 10]
+  const presets = [2, 5, 10,20]
 
   return (
     <div className="space-y-7">
-
-      {/* Category eyebrow */}
       {product.category && (
         <p className="text-[11px] font-semibold uppercase tracking-widest text-[#c9a96e]">
           {product.category.name}
         </p>
       )}
 
-      {/* Name */}
       <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight">
         {product.name}
       </h1>
 
-      {/* Price */}
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold text-gray-900">
           {isGoatMeat ? `£${(price * qty).toFixed(2)}` : formattedPrice}
@@ -60,17 +55,14 @@ export default function ProductInfo({
         )}
       </div>
 
-      {/* Short description */}
       {product.description && (
         <p className="text-gray-500 text-[14.5px] leading-relaxed line-clamp-3">
           {product.description}
         </p>
       )}
 
-      {/* Divider */}
       <div className="border-t border-gray-100" />
 
-      {/* Quick weight selector triggers explicitly for Goat Meat entries */}
       {isGoatMeat && (
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
