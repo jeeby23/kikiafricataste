@@ -28,7 +28,7 @@ const cartCount = useCartStore((s) => s.items.length)
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-1">
-            <Image src="/kikiafrica-logo.webp" alt="Kiki African Taste" width={48} height={48} />
+            <Image src="/kikiafrica-logo.webp" alt="Kiki African Taste" width={48} height={48}  className="h-10 w-auto"/>
             <h1 className={`${bokorFont.className} text-black text-2xl pt-6 mr-8`}>
               Kiki African Taste
             </h1>

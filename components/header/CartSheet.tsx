@@ -15,14 +15,13 @@ import { useCartStore } from '@/store/cartStore'
 
 export default function CartSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, updateQty, removeItem } = useCartStore()
-
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0)
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-md flex flex-col p-0"
+        className="w-full sm:max-w-md flex flex-col p-0 "
         showCloseButton={false}
       >
         <SheetHeader className="px-6 pt-6 pb-4 border-b">

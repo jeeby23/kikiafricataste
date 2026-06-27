@@ -49,32 +49,27 @@ function ProductCard({ product }: { product: import('@/types/products.types').Pr
 
       {/* Info */}
       <div className="mt-3 text-center">
-        <p className="text-sm font-medium text-gray-900 group-hover:text-black transition-colors truncate">
+        <p className="text-sm font-bold text-black  group-hover:text-black transition-colors truncate">
           {product.name}
         </p>
-        <p className="text-xs text-gray-500 mt-0.5">{priceLabel}</p>
+        {/* <p className="text-xs text-gray-500 mt-0.5">{priceLabel}</p> */}
       </div>
     </Link>
   )
 }
 
-// ─── Main component ─────────────────────────────────────────────────────────────
 interface RelatedProductsProps {
-  /** Current product's slug — used as the API key */
   slug: string
   limit?: number
 }
 
 export default function RelatedProducts({ slug, limit = 4 }: RelatedProductsProps) {
   const { data: related, isLoading, isError } = useRelatedProducts(slug, limit)
-
-  // Don't render the section at all if there's nothing to show
   if (!isLoading && (!related || related.length === 0)) return null
 
   return (
     <div className="mt-20">
       <h2 className="text-xl font-semibold mb-6">Related Products</h2>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {isLoading &&
           [...Array(limit)].map((_, i) => <SkeletonCard key={i} />)}

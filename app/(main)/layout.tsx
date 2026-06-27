@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow } from "next/font/google";
 import Header from "@/components/header";
-import { Toaster } from "sonner";
+
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -23,7 +23,6 @@ export default function MainLayout({
     <div className={`${barlow.variable} min-h-screen flex flex-col font-barlow`}>
       <Header />
       {children}
-       <Toaster position="top-right" richColors />
     </div>
   );
 }
