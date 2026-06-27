@@ -11,7 +11,7 @@ export async function cancelExpiredOrders() {
   });
 
   for (const order of expired) {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.order.update({
         where: { id: order.id },
         data: { status: "CANCELLED", cancelledAt: new Date() },

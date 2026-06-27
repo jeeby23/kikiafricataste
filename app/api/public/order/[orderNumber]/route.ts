@@ -53,7 +53,7 @@ export async function GET(
     createdAt: order.createdAt,
     minutesRemaining,
     secondsRemaining,
-    items: order.items.map((i) => ({
+    items: order.items.map((i: any) => ({
       productName: i.product.name,
       imageUrl: i.product.images[0]?.url ?? null,
       pricingType: i.pricingType,

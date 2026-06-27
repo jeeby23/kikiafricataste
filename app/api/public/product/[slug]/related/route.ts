@@ -35,7 +35,7 @@ export async function GET(
     const extra = await prisma.product.findMany({
       where: {
         isActive: true,
-        id: { notIn: [product.id, ...related.map((p) => p.id)] },
+        id: { notIn: [product.id, ...related.map((p: any) => p.id)] },
       },
       include: {
         images: { where: { isPrimary: true }, take: 1 },

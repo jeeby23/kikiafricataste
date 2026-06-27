@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   // Validate stock and weight rules per item
   for (const item of items) {
-    const product = products.find((p) => p.id === item.productId)!;
+    const product = products.find((p: any) => p.id === item.productId)!;
 
     if (item.pricingType === "FIXED") {
       if ((product.stockQty ?? 0) < item.quantity)
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   // Calculate prices from the database, never from the client
   const orderItems = items.map((item) => {
-    const product = products.find((p) => p.id === item.productId)!;
+    const product = products.find((p: any) => p.id === item.productId)!;
 
     if (item.pricingType === "FIXED") {
       const unitPrice = product.price!;
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 45 * 60 * 1000);
 
   // Save everything in one transaction
-  const order = await prisma.$transaction(async (tx) => {
+  const order = await prisma.$transaction(async (tx: any) => {
     const created = await tx.order.create({
       data: {
         orderNumber,
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
     deliveryFee: order.deliveryFee,
     total: order.total,
     expiresAt: order.expiresAt,
-    items: order.items.map((i) => ({
+    items: order.items.map((i: any) => ({
       productName: i.product.name,
       pricingType: i.pricingType,
       quantity: i.quantity,
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
     subtotal: order.subtotal,
     deliveryFee: order.deliveryFee,
     total: order.total,
-    items: order.items.map((i) => ({
+    items: order.items.map((i: any) => ({
       productName: i.product.name,
       pricingType: i.pricingType,
       quantity: i.quantity,
