@@ -1,7 +1,6 @@
 'use client'
 
 import { ShoppingCart, Check, Minus, Plus } from 'lucide-react'
-import { toast } from 'sonner'
 import { Product } from '@/types/products.types'
 
 interface ProductInfoProps {

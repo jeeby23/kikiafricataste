@@ -46,7 +46,7 @@ export default function Page() {
   })
 
  toast.success('Added to cart', {
-    id: `cart-${product.id}`,        // ← Add this line
+    id: `cart-${product.id}`,       
     description: `${product.name} (${qty}${isPerKg ? 'kg' : ' items'}) added successfully`,
   })
 
