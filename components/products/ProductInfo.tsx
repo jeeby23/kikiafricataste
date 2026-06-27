@@ -9,7 +9,7 @@ interface ProductInfoProps {
   price: number
   formattedPrice: string
   qty: number
-  // Add React. right here:
+
   setQty: React.Dispatch<React.SetStateAction<number>>
   inStock: boolean
   handleAddToCart: () => void
@@ -26,11 +26,10 @@ export default function ProductInfo({
   handleAddToCart,
   added,
 }: ProductInfoProps) {
-
   const lineTotal = `£${(price * qty).toFixed(2)}`
-  
+
   const isGoatMeat = product.name.toLowerCase().includes('goat meat')
-  const presets = [2, 5, 10,20]
+  const presets = [2, 5, 10, 20]
 
   return (
     <div className="space-y-7">
@@ -130,19 +129,14 @@ export default function ProductInfo({
 
       {/* Add to cart */}
       <button
-        onClick={() => {
-          handleAddToCart()
-          toast.success('Added to cart', {
-            description: `${product.name} (${qty}${product.pricingType === 'PER_KG' ? 'kg' : ' items'}) added successfully`,
-          })
-        }}
+       onClick={handleAddToCart}
         disabled={!inStock || added}
         className={`w-full h-14 rounded-xl flex items-center justify-center gap-3 text-sm font-semibold tracking-wide transition-all duration-200 ${
           added
             ? 'bg-emerald-600 text-white'
             : inStock
-            ? 'bg-black text-white hover:bg-[#c9a96e] hover:text-black'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              ? 'bg-black text-white hover:bg-[#c9a96e] hover:text-black'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
         }`}
       >
         {added ? (
@@ -153,7 +147,7 @@ export default function ProductInfo({
         ) : (
           <>
             <ShoppingCart className="w-4 h-4" />
-            Add to cart 
+            Add to cart
           </>
         )}
       </button>

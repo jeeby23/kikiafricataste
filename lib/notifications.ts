@@ -2,9 +2,6 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-// subtotal, total, unitPrice, item subtotals are already in POUNDS (e.g. 15 = £15)
-// deliveryFee comes from calculateDeliveryFee which returns PENCE (1000 = £10)
-// so we use two formatters:
 
 function formatPounds(amount: number): string {
   return `£${Number(amount).toFixed(2)}`;
@@ -169,7 +166,7 @@ export async function sendPaymentDetails(order: {
       <!-- After transfer steps -->
       <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#1a1a1a">After making the transfer:</p>
       <div style="background:#f5f0ea;border-radius:10px;padding:16px 20px;margin-bottom:0">
-        <p style="margin:0 0 8px;font-size:14px;color:#555">📎 Reply to this email with your payment receipt or screenshot</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#555">📎 Send a reply with your payment receipt or screenshot to our whatsapp:+447742846710</p>
         <p style="margin:0;font-size:14px;color:#555">🔖 Include your order reference: <strong>${order.orderNumber}</strong></p>
       </div>
     `;

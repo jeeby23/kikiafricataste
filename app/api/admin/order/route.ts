@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ok, requireAdmin } from "@/lib/api";
-import { Prisma } from "@prisma/client";
+import { OrderStatus } from "@prisma/client";
 import { cancelExpiredOrders } from "@/lib/cancel-expired-orders";
 
 export async function GET(req: NextRequest) {
@@ -12,12 +12,12 @@ export async function GET(req: NextRequest) {
   await cancelExpiredOrders();
 
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status") as Prisma.OrderWhereInput["status"] | null;
+  const status = searchParams.get("status") as OrderStatus | null;
   const search = searchParams.get("search") ?? "";
   const page = parseInt(searchParams.get("page") ?? "1");
   const limit = parseInt(searchParams.get("limit") ?? "20");
 
-  const where: Prisma.OrderWhereInput = {};
+  const where: any = {};
   if (status) where.status = status;
   if (search) {
     where.OR = [
