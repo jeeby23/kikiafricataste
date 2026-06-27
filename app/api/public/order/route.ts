@@ -6,8 +6,6 @@ import { z } from "zod";
 import { calculateDeliveryFee } from "@/lib/format";
 import { generateOrderNumber } from "@/lib/generator";
 
-type TX = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-
 const itemSchema = z.discriminatedUnion("pricingType", [
   z.object({
     productId: z.string(),
@@ -114,7 +112,7 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 45 * 60 * 1000);
 
   // Save everything in one transaction
-  const order = await prisma.$transaction(async (tx: TX) => {
+  const order = await prisma.$transaction(async (tx: any) => {
     const created = await tx.order.create({
       data: {
         orderNumber,
