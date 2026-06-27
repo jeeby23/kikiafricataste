@@ -5,12 +5,8 @@ import { sendPaymentDetails, sendNewOrderAlert } from "@/lib/notifications";
 import { z } from "zod";
 import { calculateDeliveryFee } from "@/lib/format";
 import { generateOrderNumber } from "@/lib/generator";
-import { PrismaClient } from "@prisma/client";
 
-type TX = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
->;
+type TX = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 const itemSchema = z.discriminatedUnion("pricingType", [
   z.object({

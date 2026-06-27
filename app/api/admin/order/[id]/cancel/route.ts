@@ -2,12 +2,9 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ok, err, requireAdmin } from "@/lib/api";
 import { sendOrderCancelled } from "@/lib/notifications";
-import { PrismaClient } from "@prisma/client";
 
-type TX = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
->;
+type TX = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
