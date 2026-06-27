@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
     subtotal: order.subtotal,
     deliveryFee: order.deliveryFee,
     total: order.total,
-    items: order.items.map((i) => ({
+    items: order.items.map((i: any) => ({
       productName: i.product.name,
       pricingType: i.pricingType,
       quantity: i.quantity,
