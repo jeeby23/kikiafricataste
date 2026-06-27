@@ -2,7 +2,12 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ok, err, requireAdmin } from "@/lib/api";
 import { sendOrderCancelled } from "@/lib/notifications";
+import { PrismaClient } from "@prisma/client";
 
+type TX = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -20,7 +25,7 @@ export async function PATCH(
   if (order.status === "CONFIRMED")
     return err("Cannot cancel a confirmed order");
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: TX) => {
     await tx.order.update({
       where: { id },
       data: { status: "CANCELLED", cancelledAt: new Date() },

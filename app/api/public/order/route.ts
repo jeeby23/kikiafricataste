@@ -5,6 +5,12 @@ import { sendPaymentDetails, sendNewOrderAlert } from "@/lib/notifications";
 import { z } from "zod";
 import { calculateDeliveryFee } from "@/lib/format";
 import { generateOrderNumber } from "@/lib/generator";
+import { PrismaClient } from "@prisma/client";
+
+type TX = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 
 const itemSchema = z.discriminatedUnion("pricingType", [
   z.object({
@@ -112,7 +118,7 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 45 * 60 * 1000);
 
   // Save everything in one transaction
-  const order = await prisma.$transaction(async (tx) => {
+  const order = await prisma.$transaction(async (tx: TX) => {
     const created = await tx.order.create({
       data: {
         orderNumber,

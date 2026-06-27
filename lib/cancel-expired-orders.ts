@@ -1,5 +1,11 @@
 import { prisma } from "./prisma";
 import { sendOrderCancelled } from "./notifications";
+import { PrismaClient } from "@prisma/client";
+
+type TX = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$use" | "$extends"
+>;
 
 export async function cancelExpiredOrders() {
   const expired = await prisma.order.findMany({
@@ -11,7 +17,7 @@ export async function cancelExpiredOrders() {
   });
 
   for (const order of expired) {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: TX) => {
       await tx.order.update({
         where: { id: order.id },
         data: { status: "CANCELLED", cancelledAt: new Date() },
