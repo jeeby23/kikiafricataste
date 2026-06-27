@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   // Validate stock and weight rules per item
   for (const item of items) {
-    const product = products.find((p) => p.id === item.productId)!;
+    const product = products.find((p: any) => p.id === item.productId)!;
 
     if (item.pricingType === "FIXED") {
       if ((product.stockQty ?? 0) < item.quantity)
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
   // Calculate prices from the database, never from the client
   const orderItems = items.map((item) => {
-    const product = products.find((p) => p.id === item.productId)!;
+    const product = products.find((p: any) => p.id === item.productId)!;
 
     if (item.pricingType === "FIXED") {
       const unitPrice = product.price!;
