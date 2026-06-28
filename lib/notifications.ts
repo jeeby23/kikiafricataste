@@ -3,15 +3,9 @@ import { sendMail } from "./mailer";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-
-function formatPounds(amount: number): string {
-  return `£${Number(amount).toFixed(2)}`;
+ export function formatPrice(cents: number): string {
+  return `£${(cents / 100).toFixed(2)}`;
 }
-
-function formatPence(amount: number): string {
-  return `£${(amount / 100).toFixed(2)}`;
-}
-
 type OrderItemDetail = {
   productName: string;
   pricingType: "FIXED" | "PER_KG";
@@ -33,7 +27,7 @@ function itemsToHtml(items: OrderItemDetail[]): string {
         <tr style="background:${bg}">
           <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;border-bottom:1px solid #f0ede8">${i.productName}</td>
           <td style="padding:12px 16px;font-size:14px;color:#6b6b6b;border-bottom:1px solid #f0ede8;text-align:center">${qty}</td>
-          <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #f0ede8;text-align:right">${formatPounds(i.subtotal)}</td>
+          <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #f0ede8;text-align:right">${formatPrice(i.subtotal)}</td>
         </tr>`;
     })
     .join("");

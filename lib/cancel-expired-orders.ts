@@ -36,7 +36,7 @@ export async function cancelExpiredOrders() {
       orderNumber: order.orderNumber,
       customerName: order.customerName,
       customerEmail: order.customerEmail,
-      customerWhatsapp: order.customerWhatsapp || "",
+      // customerWhatsapp: order.customerWhatsapp || "",
     }).catch(console.error);
   }
 
