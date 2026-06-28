@@ -45,7 +45,6 @@ export async function PATCH(
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
-    customerWhatsapp: order.customerWhatsapp || "",
   }).catch(console.error);
 
   return ok({ cancelled: true });

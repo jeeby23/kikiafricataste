@@ -156,7 +156,6 @@ export async function POST(req: NextRequest) {
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
-    customerWhatsapp: order.customerWhatsapp || "",
     subtotal: order.subtotal,
     deliveryFee: order.deliveryFee,
     total: order.total,
@@ -175,7 +174,6 @@ export async function POST(req: NextRequest) {
   sendNewOrderAlert({
     orderNumber: order.orderNumber,
     customerName: order.customerName,
-    customerWhatsapp: order.customerWhatsapp || "",
     customerEmail: order.customerEmail,
     subtotal: order.subtotal,
     deliveryFee: order.deliveryFee,
