@@ -1,94 +1,99 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import { Search as SearchIcon, SlidersHorizontal } from "lucide-react";
-import axiosInstance from "@/lib/axios";
+import { useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import { Search as SearchIcon, SlidersHorizontal } from 'lucide-react'
+import axiosInstance from '@/lib/axios'
 
 type Product = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  price: number;
-  pricingType?: "FIXED" | "PER_KG";
-  pricePerKg?: number;
-  images: { url: string; isPrimary: boolean }[];
-  category?: { name: string };
-};
+  id: string
+  name: string
+  slug: string
+  description: string
+  price: number
+  pricingType?: 'FIXED' | 'PER_KG'
+  pricePerKg?: number
+  images: { url: string; isPrimary: boolean }[]
+  category?: { name: string }
+}
 
 const formatPrice = (amount: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount);
+  new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount)
 
 export default function SearchPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const queryFromUrl = searchParams.get("search") || "";
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const queryFromUrl = searchParams.get('search') || ''
 
-  const [search, setSearch] = useState(queryFromUrl);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState(queryFromUrl)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
 
   const fetchProducts = async (query: string) => {
     try {
-      setLoading(true);
-      const res = await axiosInstance.get("/public/product", {
+      setLoading(true)
+      const res = await axiosInstance.get('/public/product', {
         params: { search: query, page: 1, limit: 20 },
-      });
-      const data = res.data;
+      })
+      const data = res.data
       if (Array.isArray(data?.data)) {
-        setProducts(data.data);
+        setProducts(data.data)
       } else if (Array.isArray(data?.data?.products)) {
-        setProducts(data.data.products);
+        setProducts(data.data.products)
       } else {
-        setProducts([]);
+        setProducts([])
       }
     } catch (err) {
-      console.error("Search failed:", err);
-      setProducts([]);
+      console.error('Search failed:', err)
+      setProducts([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    setSearch(queryFromUrl);
+    setSearch(queryFromUrl)
     if (queryFromUrl.trim()) {
-      fetchProducts(queryFromUrl);
+      fetchProducts(queryFromUrl)
     } else {
-      setProducts([]);
+      setProducts([])
     }
-  }, [queryFromUrl]);
+  }, [queryFromUrl])
 
   const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = search.trim();
-    if (!trimmed) return;
-    router.push(`/search?search=${encodeURIComponent(trimmed)}`);
-  };
+    e.preventDefault()
+    const trimmed = search.trim()
+    if (!trimmed) return
+    router.push(`/search?search=${encodeURIComponent(trimmed)}`)
+  }
 
   const getPrice = (product: Product) => {
-    if (product.pricingType === "PER_KG" && product.pricePerKg) {
-      return `${formatPrice(product.pricePerKg)}/kg`;
+    if (product.pricingType === 'PER_KG' && product.pricePerKg) {
+      return `${formatPrice(product.pricePerKg)}/kg`
     }
-    return product.price ? formatPrice(product.price) : "—";
-  };
+    return product.price ? formatPrice(product.price) : '—'
+  }
 
   return (
     <div className="min-h-screen bg-white">
-
       {/* Hero search banner */}
       <div className="relative w-full bg-black pt-24 pb-16 overflow-hidden">
         {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "32px 32px" }}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+            backgroundSize: '32px 32px',
+          }}
         />
 
         <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
           <p className="text-[#c9a96e] text-xs tracking-[0.4em] uppercase mb-3 flex items-center justify-center gap-2">
-            <span>◆</span><span>Kiki African Taste</span><span>◆</span>
+            <span>◆</span>
+            <span>Kiki African Taste</span>
+            <span>◆</span>
           </p>
           <h1 className="text-white text-3xl md:text-5xl font-light tracking-[0.25em] uppercase mb-2">
             Search
@@ -119,16 +124,14 @@ export default function SearchPage() {
 
       {/* Results section */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
-
         {/* Results meta */}
         {queryFromUrl && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8 pb-6 border-b border-gray-100">
             <div>
-              <p className="text-gray-400 text-xs tracking-widest uppercase mb-1">
-                Search results
-              </p>
+              <p className="text-gray-400 text-xs tracking-widest uppercase mb-1">Search results</p>
               <p className="text-gray-800 text-lg">
-                <span className="font-semibold">{products.length}</span> result{products.length !== 1 ? "s" : ""} for{" "}
+                <span className="font-semibold">{products.length}</span> result
+                {products.length !== 1 ? 's' : ''} for{' '}
                 <span className="text-[#c9a96e] font-medium italic">"{queryFromUrl}"</span>
               </p>
             </div>
@@ -178,15 +181,15 @@ export default function SearchPage() {
             <p className="text-gray-500 text-base font-light tracking-wide mb-2">
               What are you looking for?
             </p>
-            <p className="text-gray-400 text-sm">
-              Start typing above to discover our products.
-            </p>
+            <p className="text-gray-400 text-sm">Start typing above to discover our products.</p>
 
             {/* Popular searches */}
             <div className="mt-10">
-              <p className="text-xs text-gray-300 uppercase tracking-widest mb-4">Popular searches</p>
+              <p className="text-xs text-gray-300 uppercase tracking-widest mb-4">
+                Popular searches
+              </p>
               <div className="flex flex-wrap justify-center gap-2">
-                {["Goat Meat", "Catfish", "Ponmo", "Smoked Fish", "Dried Fish"].map((term) => (
+                {['Goat Meat', 'Catfish', 'Ponmo', 'Smoked Fish', 'Dried Fish'].map((term) => (
                   <button
                     key={term}
                     onClick={() => router.push(`/search?search=${encodeURIComponent(term)}`)}
@@ -206,21 +209,18 @@ export default function SearchPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
               {products.map((product) => {
                 const primaryImage =
-                  product.images?.find((img) => img.isPrimary) || product.images?.[0];
+                  product.images?.find((img) => img.isPrimary) || product.images?.[0]
 
                 return (
-                  <Link
-                    key={product.id}
-                    href={`/products/${product.slug}`}
-                    className="group block"
-                  >
+                  <Link key={product.id} href={`/products/${product.slug}`} className="group block">
                     <div className="flex flex-col">
                       {/* Image */}
                       <div className="relative aspect-[3/4] overflow-hidden bg-neutral-50 rounded-2xl mb-4 border border-gray-100">
                         <Image
-                          src={primaryImage?.url || "/placeholder.png"}
+                          src={primaryImage?.url || '/placeholder.png'}
                           alt={product.name}
                           fill
+                          sizes="(max-width: 640px) 100vw,(max-width: 768px) 50vw,(max-width: 1024px) 33vw,25vw"
                           className="object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 rounded-2xl" />
@@ -249,7 +249,7 @@ export default function SearchPage() {
                       </div>
                     </div>
                   </Link>
-                );
+                )
               })}
             </div>
 
@@ -264,5 +264,5 @@ export default function SearchPage() {
         )}
       </div>
     </div>
-  );
+  )
 }

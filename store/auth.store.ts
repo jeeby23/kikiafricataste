@@ -1,9 +1,15 @@
 import { create } from "zustand";
 
+interface User {
+  email: string;
+  token: string;
+}
+
 interface AuthStore {
-  user: { email: string } | null;
+  user: User | null;
   isAuthenticated: boolean;
-  setUser: (user: { email: string }) => void;
+
+  setUser: (user: User) => void;
   logout: () => void;
 }
 
@@ -16,7 +22,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
       user,
       isAuthenticated: true,
     }),
-    
 
   logout: () =>
     set({

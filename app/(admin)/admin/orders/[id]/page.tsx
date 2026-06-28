@@ -1,85 +1,76 @@
-'use client';
+'use client'
 
-import {  useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, CheckCircle, XCircle, Clock, MapPin, Phone, Mail } from 'lucide-react';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useOrderById, useConfirmOrder, useCancelOrder } from '@/features/orders/orders.query';
+import { useState } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, CheckCircle, XCircle, MapPin } from 'lucide-react'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { useOrderById, useConfirmOrder, useCancelOrder } from '@/features/orders/orders.query'
 import PageLoader from '@/components/shared/PageLoader'
+
+// subtotal → already pounds
+// deliveryFee → pence, divide by 100
+// total (DB) is mixed — always recompute
+const fmtPounds = (v: number) => `£${Number(v).toFixed(2)}`
+const fmtPence  = (v: number) => `£${(v / 100).toFixed(2)}`
+
 export default function OrderDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const { id } = useParams<{ id: string }>()
 
-  const { data: order, isLoading } = useOrderById(id);
-  const confirmOrder = useConfirmOrder();
-  const cancelOrder = useCancelOrder();
+  const { data: order, isLoading } = useOrderById(id)
+  const confirmOrder = useConfirmOrder()
+  const cancelOrder  = useCancelOrder()
 
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   const handleConfirm = () => {
-    if (!order) return;
-    setIsConfirming(true);
+    if (!order) return
+    setIsConfirming(true)
     confirmOrder.mutate(order.id, {
-      onSuccess: () => {
-        alert('Order confirmed successfully!');
-      },
+      onSuccess: () => alert('Order confirmed successfully!'),
       onSettled: () => setIsConfirming(false),
-    });
-  };
-
-  const handleCancel = () => {
-    if (!order) return;
-    if (!confirm('Are you sure you want to cancel this order?')) return;
-
-    setIsCancelling(true);
-    cancelOrder.mutate(order.id, {
-      onSuccess: () => {
-        alert('Order cancelled successfully!');
-      },
-      onSettled: () => setIsCancelling(false),
-    });
-  };
-
-if (isLoading) {
-  return (
-    <PageLoader
-      title="Loading Orders..."
-      description="Please wait while we fetch customer orders."
-    />
-  )
-}
-
-  if (!order) {
-    return <div className="p-8 text-center text-red-500">Order not found</div>;
+    })
   }
 
-  const isPending = order.status === 'PENDING_PAYMENT';
-  const isConfirmed = order.status === 'CONFIRMED';
-  const isCancelled = order.status === 'CANCELLED';
+  const handleCancel = () => {
+    if (!order) return
+    if (!confirm('Are you sure you want to cancel this order?')) return
+    setIsCancelling(true)
+    cancelOrder.mutate(order.id, {
+      onSuccess: () => alert('Order cancelled successfully!'),
+      onSettled: () => setIsCancelling(false),
+    })
+  }
+
+  if (isLoading) return <PageLoader title="Loading Order..." description="Please wait while we fetch the order." />
+  if (!order)    return <div className="p-8 text-center text-red-500">Order not found</div>
+
+  const isPending   = order.status === 'PENDING_PAYMENT'
+  const isConfirmed = order.status === 'CONFIRMED'
+  const isCancelled = order.status === 'CANCELLED'
+
+  // recompute correct total: subtotal (£) + deliveryFee (pence) / 100
+  const trueTotal = order.subtotal + order.deliveryFee / 100
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-700">
       <div className="max-w-6xl mx-auto p-6">
+
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link href="/admin/orders">
               <button className="flex items-center gap-2 text-gray-600 hover:text-black transition">
-                <ArrowLeft size={20} />
-                Back to Orders
+                <ArrowLeft size={20} /> Back to Orders
               </button>
             </Link>
             <div>
               <h1 className="text-2xl font-bold">Order #{order.orderNumber}</h1>
               <p className="text-sm text-gray-500">
-                Placed on {new Date(order.createdAt).toLocaleDateString('en-GB', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                Placed on {new Date(order.createdAt).toLocaleDateString('en-GB', {
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                 })}
               </p>
             </div>
@@ -88,26 +79,15 @@ if (isLoading) {
           <div className="flex items-center gap-3">
             {isPending && (
               <>
-                <Button
-                  onClick={handleConfirm}
-                  disabled={isConfirming}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
+                <Button onClick={handleConfirm} disabled={isConfirming} className="bg-green-600 hover:bg-green-700 text-white">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   {isConfirming ? 'Confirming...' : 'Confirm Order'}
                 </Button>
-
-                <Button
-                  onClick={handleCancel}
-                  disabled={isCancelling}
-                  variant="destructive"
-                >
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Cancel Order
+                <Button onClick={handleCancel} disabled={isCancelling} variant="destructive">
+                  <XCircle className="mr-2 h-4 w-4" /> Cancel Order
                 </Button>
               </>
             )}
-
             <Badge
               variant={isConfirmed ? 'default' : isCancelled ? 'destructive' : 'secondary'}
               className="text-sm px-4 py-1"
@@ -118,7 +98,8 @@ if (isLoading) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column - Order Items */}
+
+          {/* Left — items */}
           <div className="lg:col-span-7 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Order Items</h2>
@@ -137,21 +118,22 @@ if (isLoading) {
                     <div className="flex-1">
                       <p className="font-medium">{item.product.name}</p>
                       <p className="text-sm text-gray-500">
-                        {item.pricingType === 'PER_KG' 
-                          ? `${item.weightKg} kg × £${item.unitPrice}/kg` 
+                        {item.pricingType === 'PER_KG'
+                          ? `${item.weightKg} kg × £${item.unitPrice}/kg`
                           : `${item.quantity} × £${item.unitPrice}`}
                       </p>
                     </div>
-                    <div className="text-right font-medium">
-                      £{item.subtotal}
-                    </div>
+                    {/* item.subtotal — same unit as order.subtotal (pounds) */}
+                    <div className="text-right font-medium">{fmtPounds(item.subtotal)}</div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
+          {/* Right */}
           <div className="lg:col-span-5 space-y-6">
+
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Customer Information</h2>
               <div className="space-y-3 text-sm">
@@ -163,10 +145,9 @@ if (isLoading) {
                   <span className="text-gray-500">Email</span>
                   <span>{order.customerEmail}</span>
                 </div>
-                
                 <div className="flex justify-between">
                   <span className="text-gray-500">WhatsApp</span>
-                  <a href={`https://wa.me/${order.customerWhatsapp.replace(/\D/g, '')}`} className="text-blue-600 hover:underline">
+                  <a href={`https://wa.me/${(order.customerWhatsapp ?? '').replace(/\D/g, '')}`} className="text-blue-600 hover:underline">
                     {order.customerWhatsapp}
                   </a>
                 </div>
@@ -180,32 +161,34 @@ if (isLoading) {
               <div className="text-sm space-y-2">
                 <p>{order.deliveryAddress}</p>
                 <p>{order.deliveryCity}, {order.deliveryState}</p>
-                {order.notes && (
-                  <p className="text-amber-600 italic mt-3">Note: {order.notes}</p>
-                )}
+                {order.notes && <p className="text-amber-600 italic mt-3">Note: {order.notes}</p>}
               </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-              <div className="space-y-3">
+              <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Subtotal</span>
-                  <span>£{order.subtotal}</span>
+                  {/* pounds as-is */}
+                  <span>{fmtPounds(order.subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Delivery Fee</span>
-                  <span>£{order.deliveryFee}</span>
+                  {/* pence → pounds */}
+                  <span>{order.deliveryFee === 0 ? 'Free' : fmtPence(order.deliveryFee)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>£{order.total}</span>
+                  {/* recomputed: subtotal(£) + deliveryFee(p)/100 */}
+                  <span>{fmtPounds(trueTotal)}</span>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

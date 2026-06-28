@@ -1,15 +1,24 @@
-'use client';
+'use client'
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { Minus, Plus, Trash2, ArrowLeft, ShoppingCart } from 'lucide-react';
-import { useCartStore } from '@/store/cartStore';
-import { Button } from '@/components/ui/button';
-
+import Image from 'next/image'
+import Link from 'next/link'
+import { Minus, Plus, Trash2, ArrowLeft, ShoppingCart } from 'lucide-react'
+import { useCartStore } from '@/store/cartStore'
+import { Button } from '@/components/ui/button'
+import { calculateDeliveryFee } from '@/lib/format'
 export default function CartPage() {
-  const { items, updateQty, removeItem, clearCart } = useCartStore();
+  const { items, updateQty, removeItem, clearCart } = useCartStore()
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0)
+
+  const totalWeightKg = items
+    .filter((item) => item.pricingType === 'PER_KG')
+    .reduce((sum, item) => sum + item.qty, 0)
+
+  const deliveryFeePence = calculateDeliveryFee(totalWeightKg)
+  const deliveryFee = deliveryFeePence / 100
+
+  const total = subtotal + deliveryFee
 
   if (items.length === 0) {
     return (
@@ -24,13 +33,12 @@ export default function CartPage() {
           Start Shopping
         </Link>
       </div>
-    );
+    )
   }
 
   return (
     <div className="min-h-screen bg-white text-black pt-24 pb-16">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
-
         {/* Header */}
         <div className="flex items-center justify-between mb-10">
           <div>
@@ -42,7 +50,8 @@ export default function CartPage() {
             </Link>
             <h1 className="text-4xl font-bold tracking-tight mt-3">CART</h1>
             <p className="text-sm text-gray-400 mt-1">
-              {items.reduce((s, i) => s + i.qty, 0)} item{items.reduce((s, i) => s + i.qty, 0) !== 1 ? 's' : ''}
+              {items.reduce((s, i) => s + i.qty, 0)} item
+              {items.reduce((s, i) => s + i.qty, 0) !== 1 ? 's' : ''}
             </p>
           </div>
           <button
@@ -54,7 +63,6 @@ export default function CartPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-
           {/* Items */}
           <div className="lg:col-span-7 space-y-8">
             {items.map((item) => (
@@ -71,9 +79,7 @@ export default function CartPage() {
 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-base sm:text-lg truncate">{item.name}</h3>
-                  {item.detail && (
-                    <p className="text-xs text-gray-400 mt-0.5">{item.detail}</p>
-                  )}
+                  {item.detail && <p className="text-xs text-gray-400 mt-0.5">{item.detail}</p>}
                   <p className="text-sm text-gray-500 mt-1">£{item.price.toFixed(2)} each</p>
 
                   <div className="flex items-center gap-4 mt-4">
@@ -123,13 +129,22 @@ export default function CartPage() {
               </div>
 
               <div className="flex justify-between py-4 border-b">
-                <span className="text-gray-600">Pickup Fee</span>
-                <span className="text-green-600 font-medium">FREE</span>
+                <span className="text-gray-600">Shipping</span>
+
+                <span className="font-semibold">
+                  {totalWeightKg === 0 ? '—' : `£${deliveryFee.toFixed(2)}`}
+                </span>
               </div>
+
+              {totalWeightKg > 0 && (
+                <p className="text-xs text-gray-500 py-2 border-b">
+                  Based on {totalWeightKg.toFixed(1)}kg total weight
+                </p>
+              )}
 
               <div className="flex justify-between py-6 text-lg">
                 <span className="font-bold">Total</span>
-                <span className="font-bold">£{subtotal.toFixed(2)}</span>
+                <span className="font-bold">£{total.toFixed(2)}</span>
               </div>
 
               <Link href="/checkout">
@@ -147,5 +162,5 @@ export default function CartPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

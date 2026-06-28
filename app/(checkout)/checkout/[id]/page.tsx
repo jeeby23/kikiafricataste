@@ -17,7 +17,7 @@ export default function OrderConfirmation() {
   const params = useParams()
   const router = useRouter()
   const orderId = params.id as string
-
+const penceToPounds = (pence: number) => (pence || 0) / 100
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -47,13 +47,12 @@ export default function OrderConfirmation() {
     )
   }
 
-  const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
-
+const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
+  const deliveryFeePounds = penceToPounds(order.deliveryFee || 0)
+  const displayTotal = subtotal + deliveryFeePounds
   return (
     <div className="min-h-screen bg-[#f8f7f4] text-black pt-20 pb-16">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
-      
-
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
           <div className="lg:col-span-3 space-y-8">
             <div>
@@ -145,7 +144,6 @@ export default function OrderConfirmation() {
             </div>
           </div>
 
-
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-8 sticky top-6">
               <h3 className="font-semibold text-lg mb-6">Your Order</h3>
@@ -175,8 +173,11 @@ export default function OrderConfirmation() {
                   <span>£{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Pickup Fee</span>
-                  <span className="text-green-600">FREE</span>
+                  <span className="text-gray-600">Delivery Fee</span>
+
+                  <span>
+                   {deliveryFeePounds === 0 ? 'FREE' : `£${deliveryFeePounds.toFixed(2)}`}
+                  </span>
                 </div>
               </div>
 
@@ -184,7 +185,7 @@ export default function OrderConfirmation() {
 
               <div className="flex justify-between items-baseline">
                 <span className="text-lg font-bold">Total</span>
-                <span className="text-2xl font-bold">£{subtotal.toFixed(2)}</span>
+               <span className="text-2xl font-bold">£{displayTotal.toFixed(2)}</span>
               </div>
 
               <Link

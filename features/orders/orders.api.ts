@@ -49,9 +49,9 @@ export const cancelOrder = async (id: string) => {
   return res.data;
 };
 
-export const estimateShipping = async (
-  items: { productId: string; pricingType: string; quantity: number }[]
-) => {
-  const res = await axios.post('/orders/estimate-shipping', { items })
-  return res.data.data 
-}
+// export const estimateShipping = async (
+//   items: { productId: string; pricingType: string; quantity: number }[]
+// ) => {
+//   const res = await axios.post('/orders/estimate-shipping', { items })
+//   return res.data.data 
+// }

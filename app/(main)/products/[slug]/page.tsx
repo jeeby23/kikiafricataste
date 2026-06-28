@@ -8,7 +8,7 @@ import ProductSkeleton from '@/components/products/ProductSkeleton'
 import ProductGallery from "@/components/products/ ProductGallery"
 import ProductInfo from '@/components/products/ProductInfo'
 import RelatedProducts from '@/components/products/RelatedProducts'
-
+import { toast } from 'sonner'
 export default function Page() {
   const params = useParams()
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug
@@ -34,24 +34,27 @@ export default function Page() {
     : (product.stockQty ?? 0) > 0
 
   const handleAddToCart = () => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      image: images[0]?.url || '/placeholder.png',
-      price,
-      qty:qty,                    // ← This is the weight in KG for PER_KG
-      pricingType: product.pricingType || 'FIXED',   // ← Critical fix
-      totalPrice: price * qty,
-      detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
-    })
+  addItem({
+    id: product.id,
+    name: product.name,
+    image: images[0]?.url || '/placeholder.png',
+    price,
+    qty: qty,                   
+    pricingType: product.pricingType || 'FIXED',   
+    totalPrice: price * qty,
+    detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
+  })
 
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
-  }
+ toast.success('Added to cart', {
+    id: `cart-${product.id}`,       
+    description: `${product.name} (${qty}${isPerKg ? 'kg' : ' items'}) added successfully`,
+  })
 
+  setAdded(true)
+  setTimeout(() => setAdded(false), 2000)
+}
   return (
     <div className="bg-white text-black pt-16">
-      {/* Your existing layout */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
           <div className="md:col-span-7 lg:col-span-6">

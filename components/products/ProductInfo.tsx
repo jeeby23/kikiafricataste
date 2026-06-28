@@ -1,7 +1,6 @@
 'use client'
 
 import { ShoppingCart, Check, Minus, Plus } from 'lucide-react'
-import { toast } from 'sonner'
 import { Product } from '@/types/products.types'
 
 interface ProductInfoProps {
@@ -9,7 +8,7 @@ interface ProductInfoProps {
   price: number
   formattedPrice: string
   qty: number
-  // Add React. right here:
+
   setQty: React.Dispatch<React.SetStateAction<number>>
   inStock: boolean
   handleAddToCart: () => void
@@ -26,29 +25,23 @@ export default function ProductInfo({
   handleAddToCart,
   added,
 }: ProductInfoProps) {
-
   const lineTotal = `£${(price * qty).toFixed(2)}`
-  
-  // Conditional rule matching your request for "goat meat" items
+
   const isGoatMeat = product.name.toLowerCase().includes('goat meat')
-  const presets = [2, 5, 10]
+  const presets = [2, 5, 10, 20]
 
   return (
     <div className="space-y-7">
-
-      {/* Category eyebrow */}
       {product.category && (
         <p className="text-[11px] font-semibold uppercase tracking-widest text-[#c9a96e]">
           {product.category.name}
         </p>
       )}
 
-      {/* Name */}
       <h1 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight">
         {product.name}
       </h1>
 
-      {/* Price */}
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold text-gray-900">
           {isGoatMeat ? `£${(price * qty).toFixed(2)}` : formattedPrice}
@@ -60,17 +53,14 @@ export default function ProductInfo({
         )}
       </div>
 
-      {/* Short description */}
       {product.description && (
         <p className="text-gray-500 text-[14.5px] leading-relaxed line-clamp-3">
           {product.description}
         </p>
       )}
 
-      {/* Divider */}
       <div className="border-t border-gray-100" />
 
-      {/* Quick weight selector triggers explicitly for Goat Meat entries */}
       {isGoatMeat && (
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
@@ -138,19 +128,14 @@ export default function ProductInfo({
 
       {/* Add to cart */}
       <button
-        onClick={() => {
-          handleAddToCart()
-          toast.success('Added to cart', {
-            description: `${product.name} (${qty}${product.pricingType === 'PER_KG' ? 'kg' : ' items'}) added successfully`,
-          })
-        }}
+       onClick={handleAddToCart}
         disabled={!inStock || added}
         className={`w-full h-14 rounded-xl flex items-center justify-center gap-3 text-sm font-semibold tracking-wide transition-all duration-200 ${
           added
             ? 'bg-emerald-600 text-white'
             : inStock
-            ? 'bg-black text-white hover:bg-[#c9a96e] hover:text-black'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              ? 'bg-black text-white hover:bg-[#c9a96e] hover:text-black'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
         }`}
       >
         {added ? (
@@ -161,7 +146,7 @@ export default function ProductInfo({
         ) : (
           <>
             <ShoppingCart className="w-4 h-4" />
-            Add to cart 
+            Add to cart
           </>
         )}
       </button>

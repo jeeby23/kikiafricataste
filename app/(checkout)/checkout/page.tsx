@@ -55,8 +55,6 @@ export default function CheckoutPage() {
 
   const total = deliveryMethod === 'pickup' ? subtotal : subtotal + deliveryFee
 
-
-
   const handleInputChange = (key: keyof typeof form, value: string | boolean) => {
     setForm((p) => ({ ...p, [key]: value }))
     if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }))
@@ -79,72 +77,86 @@ export default function CheckoutPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
+  e.preventDefault()
+  if (!validateForm()) return
 
-    setIsSubmitting(true)
+  setIsSubmitting(true)
 
-    try {
-      const payload = {
-        customerName: `${form.firstName} ${form.lastName}`.trim(),
-        customerEmail: form.email.trim(),
-        customerWhatsapp: form.whatsappPhone || form.recipientPhone,
-        deliveryAddress: deliveryMethod === 'pickup' ? 'Store Pickup' : form.address.trim(),
-        deliveryPostCode: deliveryMethod === 'pickup' ? 'PICKUP' : form.postalCode.trim(),
-        deliveryCity: deliveryMethod === 'pickup' ? 'Store' : form.city.trim(),
-        deliveryState: deliveryMethod === 'pickup' ? 'Pickup' : form.state,
-        notes: '',
-        items: cartItems.map((item) => ({
-          productId: item.id,
-          pricingType: item.pricingType || 'FIXED',
-          quantity: item.pricingType === 'FIXED' ? item.qty : undefined,
-          weightKg: item.pricingType === 'PER_KG' ? item.qty : undefined,
-        })),
-      }
-
-      const res = await createOrder(payload)
-
-      if (res?.error) {
-        toast.error(res.error)
-        return
-      }
-
-      const orderNumber = res.data?.orderNumber || res.data?.id
-      if (!orderNumber) {
-        toast.error('Server did not return order number')
-        return
-      }
-
-      // Server returns pence — divide by 100 so order confirmation page
-      // can display correctly in pounds without further conversion
-      const orderData = {
-        orderNumber,
-        customerName: payload.customerName,
-        customerEmail: payload.customerEmail,
-        customerWhatsapp: payload.customerWhatsapp,
-        deliveryAddress: payload.deliveryAddress,
-        deliveryCity: payload.deliveryCity,
-        deliveryState: payload.deliveryState,
-        deliveryPostCode: payload.deliveryPostCode,
-        items: cartItems,
-        subtotal: res.data.subtotal,
-        deliveryFee: res.data.deliveryFee ,
-        total: res.data.total,
-        expiresAt: res.data.expiresAt,
-      }
-
-      localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderData))
-      clearCart()
-      toast.success('Order placed successfully! 🎉')
-      router.push(`/checkout/${orderNumber}`)
-    } catch (error: any) {
-      console.error('Checkout Error:', error)
-      toast.error(error?.response?.data?.error || 'Failed to place order. Please try again.')
-    } finally {
-      setIsSubmitting(false)
+  try {
+    const payload = {
+      customerName: `${form.firstName} ${form.lastName}`.trim(),
+      customerEmail: form.email.trim(),
+      customerWhatsapp: form.whatsappPhone || form.recipientPhone,
+      deliveryAddress: deliveryMethod === 'pickup' ? 'Store Pickup' : form.address.trim(),
+      deliveryPostCode: deliveryMethod === 'pickup' ? 'PICKUP' : form.postalCode.trim(),
+      deliveryCity: deliveryMethod === 'pickup' ? 'Store' : form.city.trim(),
+      deliveryState: deliveryMethod === 'pickup' ? 'Pickup' : form.state,
+      notes: '',
+      items: cartItems.map((item) => ({
+        productId: item.id,
+        pricingType: item.pricingType || 'FIXED',
+        quantity: item.pricingType === 'FIXED' ? item.qty : undefined,
+        weightKg: item.pricingType === 'PER_KG' ? item.qty : undefined,
+      })),
     }
-  }
 
+    const res = await createOrder(payload)
+
+    // Handle structured error returned from API
+    if (res?.error) {
+      toast.error(res.error)
+      return
+    }
+
+    // Additional safety for different possible response shapes
+    if (res?.data?.error) {
+      toast.error(res.data.error)
+      return
+    }
+
+    const orderNumber = res.data?.orderNumber || res.data?.id
+    if (!orderNumber) {
+      toast.error('Server did not return order number')
+      return
+    }
+
+    // ... rest of your success logic (unchanged)
+    const orderData = {
+      orderNumber,
+      customerName: payload.customerName,
+      customerEmail: payload.customerEmail,
+      customerWhatsapp: payload.customerWhatsapp,
+      deliveryAddress: payload.deliveryAddress,
+      deliveryCity: payload.deliveryCity,
+      deliveryState: payload.deliveryState,
+      deliveryPostCode: payload.deliveryPostCode,
+      items: cartItems,
+      subtotal: res.data.subtotal,
+      deliveryFee: res.data.deliveryFee,
+      total: res.data.total,
+      expiresAt: res.data.expiresAt,
+    }
+console.log( "orderdata",orderData.deliveryFee)
+    localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderData))
+    clearCart()
+    toast.success('Order placed successfully! 🎉')
+    router.push(`/checkout/${orderNumber}`)
+  } catch (error: any) {
+    console.error('Checkout Error:', error)
+
+    // Enhanced error extraction for backend messages
+    const errorMessage =
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      error?.response?.data?.detail ||
+      error?.message ||
+      'Failed to place order. Please try again.'
+
+    toast.error(errorMessage)
+  } finally {
+    setIsSubmitting(false)
+  }
+}
   const displayItems = cartItems.length > 0 ? cartItems : []
 
   return (
@@ -344,7 +356,7 @@ export default function CheckoutPage() {
                   <div className="flex items-center gap-3">
                     <div className="relative w-[64px] h-[64px] bg-white rounded-lg border border-gray-200 overflow-hidden flex-shrink-0">
                       <Image src={item.image} alt={item.name} fill className="object-cover" />
-                      <span className="absolute -top-1.5 -right-1.5 bg-gray-500 text-white text-[11px] font-medium w-[20px] h-[20px] rounded-full flex items-center justify-center">
+                      <span className="absolute bg-gray-500 text-white text-[11px] font-medium w-[20px] h-[20px] rounded-full flex items-center justify-center">
                         {item.qty}
                       </span>
                     </div>

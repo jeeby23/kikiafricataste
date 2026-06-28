@@ -3,8 +3,13 @@ import { sendMail } from "./mailer";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-export function formatPrice(cents: number): string {
-  return `£${(cents / 100).toFixed(2)}`;
+
+function formatPounds(amount: number): string {
+  return `£${Number(amount).toFixed(2)}`;
+}
+
+function formatPence(amount: number): string {
+  return `£${(amount / 100).toFixed(2)}`;
 }
 
 type OrderItemDetail = {
@@ -18,27 +23,28 @@ type OrderItemDetail = {
 
 function itemsToHtml(items: OrderItemDetail[]): string {
   const rows = items
-    .map((i) => {
+    .map((i, idx) => {
       const qty =
         i.pricingType === "PER_KG"
           ? `${i.weightKg! * 1000}g`
           : `x${i.quantity}`;
+      const bg = idx % 2 === 0 ? "#ffffff" : "#fafaf9";
       return `
-        <tr>
-          <td style="padding:8px;border-bottom:1px solid #eee">${i.productName}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee">${qty}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee">${formatPrice(i.subtotal)}</td>
+        <tr style="background:${bg}">
+          <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;border-bottom:1px solid #f0ede8">${i.productName}</td>
+          <td style="padding:12px 16px;font-size:14px;color:#6b6b6b;border-bottom:1px solid #f0ede8;text-align:center">${qty}</td>
+          <td style="padding:12px 16px;font-size:14px;color:#1a1a1a;font-weight:600;border-bottom:1px solid #f0ede8;text-align:right">${formatPounds(i.subtotal)}</td>
         </tr>`;
     })
     .join("");
 
   return `
-    <table style="width:100%;border-collapse:collapse;margin:16px 0">
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;border-radius:10px;overflow:hidden;border:1px solid #f0ede8">
       <thead>
-        <tr style="background:#f9f9f9">
-          <th style="padding:8px;text-align:left">Item</th>
-          <th style="padding:8px;text-align:left">Qty</th>
-          <th style="padding:8px;text-align:left">Subtotal</th>
+        <tr style="background:#1a1a1a">
+          <th style="padding:12px 16px;text-align:left;font-size:12px;font-weight:600;color:#c9a96e;letter-spacing:0.5px;text-transform:uppercase">Item</th>
+          <th style="padding:12px 16px;text-align:center;font-size:12px;font-weight:600;color:#c9a96e;letter-spacing:0.5px;text-transform:uppercase">Qty</th>
+          <th style="padding:12px 16px;text-align:right;font-size:12px;font-weight:600;color:#c9a96e;letter-spacing:0.5px;text-transform:uppercase">Subtotal</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>

@@ -15,6 +15,7 @@ export async function middleware(req: NextRequest) {
   if (isPublic) return NextResponse.next();
 
   const token = req.cookies.get("admin_token")?.value;
+    console.log("Token:", token);
   const admin = token ? await verifyToken(token) : null;
 
   if (!admin) {

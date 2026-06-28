@@ -6,6 +6,8 @@ export interface LoginInput {
 export interface LoginResponse {
   data: {
     email: string;
+    token: string;
+
   };
   error: string | null;
 }
