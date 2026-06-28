@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { sendMail } from "./mailer";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -14,18 +15,6 @@ type OrderItemDetail = {
   unitPrice: number;
   subtotal: number;
 };
-
-function itemsToText(items: OrderItemDetail[]): string {
-  return items
-    .map((i) => {
-      const qty =
-        i.pricingType === "PER_KG"
-          ? `${i.weightKg! * 1000}g`
-          : `x${i.quantity}`;
-      return `- ${i.productName} (${qty}) — ${formatPrice(i.subtotal)}`;
-    })
-    .join("\n");
-}
 
 function itemsToHtml(items: OrderItemDetail[]): string {
   const rows = items
@@ -57,246 +46,229 @@ function itemsToHtml(items: OrderItemDetail[]): string {
   `;
 }
 
-// ─── Order placed — payment instructions ──────────────────────
+// ─── Order placed — payment instructions to customer ──────────
 
 export async function sendPaymentDetails(order: {
   orderNumber: string;
   customerName: string;
   customerEmail: string | null;
-  customerWhatsapp: string;
+  subtotal: number;
+  deliveryFee: number;
   total: number;
   expiresAt: Date;
-  deliveryFee: number;
-  subtotal: number;
   items: OrderItemDetail[];
 }) {
-  const itemsText = itemsToText(order.items);
+  if (!order.customerEmail) return;
 
-  const whatsappText = `
-Hi ${order.customerName}, thanks for your order!
+  await sendMail({
+    to: order.customerEmail,
+    subject: `Payment details for order ${order.orderNumber}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
 
-ORDER #${order.orderNumber}
+        <h2 style="color: #1a1a1a">Thank you for your order, ${order.customerName}! 🎉</h2>
 
-${itemsText}
+        <p>We've received your order and it's currently being held for you.
+        Please complete your bank transfer within <strong>30 minutes</strong>
+        to secure your items.</p>
 
-Total: ${formatPrice(order.total)}
-Deadline: Pay before ${order.expiresAt.toLocaleTimeString()} or this order will be cancelled.
+        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">
+          Order Summary — ${order.orderNumber}
+        </h3>
 
-Bank: ${process.env.STORE_BANK_NAME}
-Account Number: ${process.env.STORE_ACCOUNT_NUMBER}
-Account Name: ${process.env.STORE_ACCOUNT_NAME}
+        ${itemsToHtml(order.items)}
 
-Use "${order.orderNumber}" as your transfer reference.
-  `.trim();
+        <table style="width:100%; margin: 16px 0">
+          <tr>
+            <td>Subtotal</td>
+            <td style="text-align:right">${formatPrice(order.subtotal)}</td>
+          </tr>
+          <tr>
+            <td>Delivery</td>
+            <td style="text-align:right">${formatPrice(order.deliveryFee)}</td>
+          </tr>
+          <tr style="font-weight:bold; font-size:16px">
+            <td>Total</td>
+            <td style="text-align:right">${formatPrice(order.total)}</td>
+          </tr>
+        </table>
 
-  if (order.customerEmail) {
-    const html = `
-  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
-    
-    <h2 style="color: #1a1a1a">Thank you for your order, ${order.customerName}! 🎉</h2>
-    
-    <p>We've received your order and it's currently being held for you. 
-    Please complete your bank transfer within <strong>30 minutes</strong> 
-    to secure your items.</p>
+        <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
+          <h3 style="margin-top:0">Payment Details</h3>
+          <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
+          <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
+          <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+          <p style="margin:4px 0">Amount: <strong>${formatPrice(order.total)}</strong></p>
+          <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
+        </div>
 
-    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">
-      Order Summary — ${order.orderNumber}
-    </h3>
+        <div style="background:#fff8e1; border: 1px solid #ffe082; padding: 12px 16px; border-radius: 4px">
+          ⚠️ <strong>Payment deadline: ${order.expiresAt.toLocaleTimeString()}</strong><br/>
+          Your order will be automatically cancelled if payment is not received by this time.
+        </div>
 
-    ${itemsToHtml(order.items)}
+        <p style="margin-top: 24px">
+          Once you've made the transfer, please reply to this email with:
+          <ul>
+            <li>Your payment receipt or screenshot</li>
+            <li>Your name</li>
+            <li>Your order reference: <strong>${order.orderNumber}</strong></li>
+          </ul>
+        </p>
 
-    <table style="width:100%; margin: 16px 0">
-      <tr>
-        <td>Subtotal</td>
-        <td style="text-align:right">${formatPrice(order.subtotal)}</td>
-      </tr>
-      <tr>
-        <td>Delivery</td>
-        <td style="text-align:right">${formatPrice(order.deliveryFee)}</td>
-      </tr>
-      <tr style="font-weight:bold; font-size:16px">
-        <td>Total</td>
-        <td style="text-align:right">${formatPrice(order.total)}</td>
-      </tr>
-    </table>
+        <p>Our team will confirm your order as soon as payment is verified.</p>
 
-    <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
-      <h3 style="margin-top:0">Payment Details</h3>
-      <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
-      <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
-      <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
-      <p style="margin:4px 0">Amount: <strong>${formatPrice(order.total)}</strong></p>
-      <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
-    </div>
+        <p style="color:#888; font-size:13px; margin-top:32px; border-top:1px solid #eee; padding-top:16px">
+          If you have any questions, simply reply to this email.<br/>
+          Thank you for choosing Kiki African Taste 🌍
+        </p>
 
-    <div style="background:#fff8e1; border: 1px solid #ffe082; padding: 12px 16px; border-radius: 4px">
-      ⚠️ <strong>Payment deadline: ${order.expiresAt.toLocaleTimeString()}</strong><br/>
-      Your order will be automatically cancelled if payment is not received by this time.
-    </div>
-
-    <p style="margin-top: 24px">
-      Once you've made the transfer, please reply to this email with:
-      <ul>
-        <li>Your payment receipt or screenshot</li>
-        <li>Your name</li>
-        <li>Your order reference: <strong>${order.orderNumber}</strong></li>
-      </ul>
-    </p>
-
-    <p>Our team will confirm your order as soon as payment is verified.</p>
-
-    <p style="color:#888; font-size:13px; margin-top:32px; border-top:1px solid #eee; padding-top:16px">
-      If you have any questions, simply reply to this email.<br/>
-      Thank you for choosing Kiki African Taste 🌍
-    </p>
-
-  </div>
-`;
-
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL!,
-      to: order.customerEmail,
-      subject: `Payment details for order ${order.orderNumber}`,
-      html,
-    });
-  }
+      </div>
+    `,
+  });
 }
 
-// ─── Order confirmed ────────────────────────────────────────────
+// ─── New order alert to admin ──────────────────────────────────
+
+export async function sendNewOrderAlert(order: {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string | null;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  items: OrderItemDetail[];
+}) {
+  await sendMail({
+    to: process.env.ADMIN_EMAIL!,
+    subject: `New order: ${order.orderNumber} — ${formatPrice(order.total)}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
+
+        <h2 style="color: #1a1a1a">🛒 New Order Received — ${order.orderNumber}</h2>
+
+        <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
+          <h3 style="margin-top:0">Check this account for payment</h3>
+          <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
+          <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
+          <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+          <p style="margin:4px 0">Expected Amount: <strong>${formatPrice(order.total)}</strong></p>
+          <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
+        </div>
+
+        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">Customer Details</h3>
+        <p style="margin:4px 0">Name: <strong>${order.customerName}</strong></p>
+        <p style="margin:4px 0">Email: <strong>${order.customerEmail ?? "Not provided"}</strong></p>
+
+        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">Order Items</h3>
+        ${itemsToHtml(order.items)}
+
+        <table style="width:100%; margin: 16px 0">
+          <tr>
+            <td>Subtotal</td>
+            <td style="text-align:right">${formatPrice(order.subtotal)}</td>
+          </tr>
+          <tr>
+            <td>Delivery Fee</td>
+            <td style="text-align:right">${formatPrice(order.deliveryFee)}</td>
+          </tr>
+          <tr style="font-weight:bold; font-size:16px; border-top: 1px solid #eee">
+            <td>Total</td>
+            <td style="text-align:right">${formatPrice(order.total)}</td>
+          </tr>
+        </table>
+
+        <div style="background:#fff8e1; border: 1px solid #ffe082; padding: 12px 16px; border-radius: 4px">
+          ⚠️ This order expires in <strong>30 minutes</strong>.
+          Confirm payment in the dashboard before then or it will be auto-cancelled.
+        </div>
+
+        <p style="margin-top: 24px">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/orders"
+             style="background:#1a1a1a; color:#fff; padding:12px 24px; text-decoration:none; border-radius:4px">
+            View Order in Dashboard →
+          </a>
+        </p>
+
+      </div>
+    `,
+  });
+}
+
+// ─── Order confirmed ───────────────────────────────────────────
 
 export async function sendOrderConfirmed(order: {
   orderNumber: string;
   customerName: string;
   customerEmail: string | null;
-  customerWhatsapp: string;
   total: number;
   items: OrderItemDetail[];
 }) {
-  const itemsText = itemsToText(order.items);
+  if (!order.customerEmail) return;
 
-  const whatsappText = `
-Hi ${order.customerName}, your order has been confirmed! 🎉
+  await sendMail({
+    to: order.customerEmail,
+    subject: `Order ${order.orderNumber} confirmed! 🎉`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
 
-ORDER #${order.orderNumber}
+        <h2 style="color: #1a1a1a">Your order has been confirmed! 🎉</h2>
+        <p>Hi ${order.customerName}, we have received your payment. Thank you!</p>
 
-${itemsText}
+        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">
+          Order: ${order.orderNumber}
+        </h3>
 
-Total paid: ${formatPrice(order.total)}
+        ${itemsToHtml(order.items)}
 
-We'll begin processing your delivery shortly.
-  `.trim();
+        <table style="width:100%; margin: 16px 0">
+          <tr style="font-weight:bold; font-size:16px">
+            <td>Total Paid</td>
+            <td style="text-align:right">${formatPrice(order.total)}</td>
+          </tr>
+        </table>
 
-  if (order.customerEmail) {
-    const html = `
-      <h2>Your order has been confirmed! 🎉</h2>
-      <p>Hi ${order.customerName}, we have received your payment.</p>
-      <h3>Order: ${order.orderNumber}</h3>
-      ${itemsToHtml(order.items)}
-      <h3>Total: ${formatPrice(order.total)}</h3>
-      <p>We will begin processing your delivery shortly.</p>
-    `;
+        <p>We will begin processing your delivery shortly.</p>
 
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL!,
-      to: order.customerEmail,
-      subject: `Order ${order.orderNumber} confirmed!`,
-      html,
-    });
-  }
+        <p style="color:#888; font-size:13px; margin-top:32px; border-top:1px solid #eee; padding-top:16px">
+          Thank you for choosing Kiki African Taste 🌍
+        </p>
+
+      </div>
+    `,
+  });
 }
 
-// ─── Order cancelled ────────────────────────────────────────────
+// ─── Order cancelled ───────────────────────────────────────────
 
 export async function sendOrderCancelled(order: {
   orderNumber: string;
   customerName: string;
   customerEmail: string | null;
-  customerWhatsapp: string;
 }) {
-  const text = `Hi ${order.customerName}, your order ${order.orderNumber} has been cancelled because no payment was received within 45 minutes. You're welcome to place a new order anytime.`;
+  if (!order.customerEmail) return;
 
-  if (order.customerEmail) {
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL!,
-      to: order.customerEmail,
-      subject: `Order ${order.orderNumber} cancelled`,
-      html: `<p>${text}</p>`,
-    });
-  }
-}
-
-// ─── New order alert to admin ───────────────────────────────────
-
-export async function sendNewOrderAlert(order: {
-  orderNumber: string;
-  customerName: string;
-  customerWhatsapp: string;
-  total: number;
-  deliveryFee: number;
-  subtotal: number;
-  customerEmail: string;
-  items: OrderItemDetail[];
-}) {
-  const itemsText = itemsToText(order.items);
-
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
-    to: process.env.ADMIN_EMAIL!,
-    subject: `New order: ${order.orderNumber} — ${formatPrice(order.total)}`,
+  await sendMail({
+    to: order.customerEmail,
+    subject: `Order ${order.orderNumber} cancelled`,
     html: `
-  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
-    
-    <h2 style="color: #1a1a1a">🛒 New Order Received — ${order.orderNumber}</h2>
-    
-    <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
-      <h3 style="margin-top:0">Check this account for payment</h3>
-      <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
-      <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
-      <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
-      <p style="margin:4px 0">Expected Amount: <strong>${formatPrice(order.total)}</strong></p>
-      <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
-    </div>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
 
-    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">Customer Details</h3>
-    <p style="margin:4px 0">Name: <strong>${order.customerName}</strong></p>
-    <p style="margin:4px 0">Email: <strong>${order.customerEmail}</strong></p>
+        <h2 style="color: #1a1a1a">Your order has been cancelled</h2>
+        <p>Hi ${order.customerName}, your order <strong>${order.orderNumber}</strong>
+        was cancelled because no payment was received within 30 minutes.</p>
+        <p>You're welcome to place a new order anytime.</p>
 
-    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 8px">Order Items</h3>
-    ${itemsToHtml(order.items)}
+        <p style="color:#888; font-size:13px; margin-top:32px; border-top:1px solid #eee; padding-top:16px">
+          Thank you for choosing Kiki African Taste 🌍
+        </p>
 
-    <table style="width:100%; margin: 16px 0">
-      <tr>
-        <td>Subtotal</td>
-        <td style="text-align:right">${formatPrice(order.subtotal)}</td>
-      </tr>
-      <tr>
-        <td>Delivery Fee</td>
-        <td style="text-align:right">${formatPrice(order.deliveryFee)}</td>
-      </tr>
-      <tr style="font-weight:bold; font-size:16px; border-top: 1px solid #eee">
-        <td>Total</td>
-        <td style="text-align:right">${formatPrice(order.total)}</td>
-      </tr>
-    </table>
-
-    <div style="background:#fff8e1; border: 1px solid #ffe082; padding: 12px 16px; border-radius: 4px">
-      ⚠️ This order expires in <strong>30 minutes</strong>. 
-      Confirm payment in the dashboard before then or it will be auto-cancelled.
-    </div>
-
-    <p style="margin-top: 24px">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/api/admin/order" 
-         style="background:#1a1a1a; color:#fff; padding:12px 24px; text-decoration:none; border-radius:4px">
-        View Order in Dashboard →
-      </a>
-    </p>
-
-  </div>
-`,
+      </div>
+    `,
   });
 }
 
-// ─── Forgot password ─────────────────────────────────────────────
+// ─── Forgot password — Resend only ────────────────────────────
 
 export async function sendPasswordResetEmail(email: string, token: string) {
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/reset-password?token=${token}`;
@@ -304,12 +276,20 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL!,
     to: email,
-    subject: "Reset your password",
+    subject: "Reset your admin password",
     html: `
-      <h2>Password Reset</h2>
-      <p>Click the link below to set a new password.</p>
-      <p><a href="${resetUrl}">Reset Password</a></p>
-      <p>This link expires in <strong>15 minutes</strong>.</p>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
+        <h2>Password Reset</h2>
+        <p>Click the link below to set a new password.</p>
+        <p>
+          <a href="${resetUrl}"
+             style="background:#1a1a1a; color:#fff; padding:12px 24px; text-decoration:none; border-radius:4px">
+            Reset Password
+          </a>
+        </p>
+        <p style="color:#888; font-size:13px">This link expires in <strong>15 minutes</strong>.</p>
+        <p style="color:#888; font-size:13px">If you did not request this, ignore this email.</p>
+      </div>
     `,
   });
 }
