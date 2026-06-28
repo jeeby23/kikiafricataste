@@ -208,7 +208,7 @@ export async function sendOrderConfirmed(order: {
 
   await sendMail({
     to: order.customerEmail,
-    subject: `Order ${order.orderNumber} confirmed! 🎉`,
+    subject: `Order ${order.orderNumber} confirmed 🎉`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333">
 
