@@ -27,7 +27,7 @@ export default function Page() {
   const images = product.images || []
   const isPerKg = product.pricingType === 'PER_KG'
 
-  // === FIXED: Convert pence to pounds for display ===
+  // === Price in pounds ===
   const priceInPence = isPerKg ? (product.pricePerKg ?? 0) : (product.price ?? 0)
   const priceInPounds = priceInPence / 100
 
@@ -39,22 +39,41 @@ export default function Page() {
     ? (product.stockKg ?? 0) > 0 
     : (product.stockQty ?? 0) > 0
 
+  // === NEW: Minimum Order Logic ===
+  const getMinimumQty = (): number => {
+    const nameLower = product.name.toLowerCase()
+    const categoryName = product.category?.name?.toLowerCase() || ''
+
+    if (categoryName.includes('ponmo') || nameLower.includes('ponmo')) return 10
+    if (nameLower.includes('smoked abo') || nameLower.includes('abo fish')) return 6
+    if (nameLower.includes('smoked catfish') || nameLower.includes('catfish')) return 4
+    if (nameLower.includes('eja kika') || nameLower.includes('smoked eja')) return 16
+    return 1 
+  }
+
+  const minQty = getMinimumQty()
+
   const handleAddToCart = () => {
+    if (qty < minQty) {
+      toast.error(`Minimum order for this item is ${minQty} pieces`, {
+        description: `You selected ${qty} — please increase quantity.`,
+      })
+      return
+    }
+
     addItem({
       id: product.id,
       name: product.name,
       image: images[0]?.url || '/placeholder.png',
-      price: priceInPounds,          
+      price: priceInPounds,
       qty: qty,                   
       pricingType: product.pricingType || 'FIXED',   
       totalPrice: priceInPounds * qty,
       detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
     })
-    console.log("products",addItem)
 
     toast.success('Added to cart', {
-      id: `cart-${product.id}`,       
-      description: `${product.name} (${qty}${isPerKg ? 'kg' : ' items'}) added successfully`,
+      description: `${product.name} (${qty}${isPerKg ? 'kg' : ' pieces'}) added successfully`,
     })
 
     setAdded(true)
@@ -72,13 +91,14 @@ export default function Page() {
           <div className="md:col-span-5 lg:col-span-5 md:sticky md:top-24 self-start">
             <ProductInfo
               product={product}
-              price={priceInPounds}           // ← Pass pounds
+              price={priceInPounds}
               formattedPrice={formattedPrice}
               qty={qty}
               setQty={setQty}
               inStock={inStock}
               handleAddToCart={handleAddToCart}
               added={added}
+              minQty={minQty}   // ← Pass minimum to ProductInfo if needed
             />
           </div>
         </div>
@@ -128,7 +148,6 @@ export default function Page() {
               </div>
             </div>
 
-            {/* How to use - unchanged */}
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-widest text-[#c9a96e] mb-4">
                 How to use

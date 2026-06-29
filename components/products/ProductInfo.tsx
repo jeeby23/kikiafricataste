@@ -8,11 +8,11 @@ interface ProductInfoProps {
   price: number
   formattedPrice: string
   qty: number
-
   setQty: React.Dispatch<React.SetStateAction<number>>
   inStock: boolean
   handleAddToCart: () => void
   added: boolean
+  minQty: number
 }
 
 export default function ProductInfo({
@@ -24,11 +24,15 @@ export default function ProductInfo({
   inStock,
   handleAddToCart,
   added,
+  minQty,
 }: ProductInfoProps) {
   const lineTotal = `£${(price * qty).toFixed(2)}`
 
   const isGoatMeat = product.name.toLowerCase().includes('goat meat')
   const presets = [2, 5, 10, 20]
+
+  // Only show minimum text for products that actually have a minimum > 1
+  const showMinQty = minQty > 1
 
   return (
     <div className="space-y-7">
@@ -52,6 +56,13 @@ export default function ProductInfo({
           </span>
         )}
       </div>
+
+      {/* Minimum Order Text - Only show for special products */}
+      {showMinQty && (
+        <p className="text-sm text-gray-500 font-medium">
+          Minimum order: <strong>{minQty} pieces</strong>
+        </p>
+      )}
 
       {product.description && (
         <p className="text-gray-500 text-[14.5px] leading-relaxed line-clamp-3">
@@ -85,7 +96,7 @@ export default function ProductInfo({
         </div>
       )}
 
-      {/* Qty & Add selector row */}
+      {/* Qty Selector */}
       <div className="space-y-2">
         <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
           {product.pricingType === 'PER_KG' ? 'Adjust Weight (kg)' : 'Quantity'}
@@ -93,7 +104,7 @@ export default function ProductInfo({
 
         <div className="flex items-center gap-0">
           <button
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
+            onClick={() => setQty((q) => Math.max(minQty, q - 1))}
             className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-l-xl text-gray-600 hover:bg-gray-50 transition-colors"
             aria-label="Decrease"
           >
@@ -126,9 +137,9 @@ export default function ProductInfo({
         </span>
       </div>
 
-      {/* Add to cart */}
+      {/* Add to cart button */}
       <button
-       onClick={handleAddToCart}
+        onClick={handleAddToCart}
         disabled={!inStock || added}
         className={`w-full h-14 rounded-xl flex items-center justify-center gap-3 text-sm font-semibold tracking-wide transition-all duration-200 ${
           added
@@ -151,7 +162,6 @@ export default function ProductInfo({
         )}
       </button>
 
-      {/* Trust note */}
       <p className="text-[11px] text-gray-400 text-center">
         🚚 Free delivery on orders over £10 · Secure checkout
       </p>
