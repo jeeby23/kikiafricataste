@@ -5,7 +5,18 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-   withCredentials: true, 
+  //  withCredentials: true, 
+
+  // Public API
+// const publicApi = axios.create({
+//   baseURL: API_URL,
+// })
+
+// // Admin API
+// const adminApi = axios.create({
+//   baseURL: API_URL,
+//   withCredentials: true,
+// })
 });
 
 export default axiosInstance;
