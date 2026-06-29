@@ -19,10 +19,16 @@ export async function sendMail({
   subject: string;
   html: string;
 }) {
-  await transporter.sendMail({
-    from: `Kiki African Taste <${process.env.ZOHO_EMAIL}>`,
-    to,
-    subject,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: `Kiki African Taste <${process.env.ZOHO_EMAIL}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log("Email sent successfully to:", to);
+  } catch (e) {
+    console.error("Zoho SMTP error:", e);
+    throw e;
+  }
 }
