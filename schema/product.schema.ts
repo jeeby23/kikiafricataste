@@ -32,16 +32,11 @@ export const productFormSchema = z
 
 ),
    minWeightKg: z.preprocess(
-
   (v) => v === '' ? undefined : v,
-
   z.coerce.number().positive().optional()
-
 ),
    stepWeightKg: z.preprocess(
-
   (v) => v === '' ? undefined : v,
-
   z.coerce.number().positive().optional()
 
 ),

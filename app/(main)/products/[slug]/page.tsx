@@ -9,6 +9,7 @@ import ProductGallery from "@/components/products/ ProductGallery"
 import ProductInfo from '@/components/products/ProductInfo'
 import RelatedProducts from '@/components/products/RelatedProducts'
 import { toast } from 'sonner'
+
 export default function Page() {
   const params = useParams()
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug
@@ -16,7 +17,7 @@ export default function Page() {
   const { data: product, isLoading } = useProduct(slug || '')
   const addItem = useCartStore((s) => s.addItem)
 
-  const [qty, setQty] = useState(1) // This is in KG for PER_KG products
+  const [qty, setQty] = useState(1)
   const [activeImage, setActiveImage] = useState(0)
   const [added, setAdded] = useState(false)
 
@@ -26,33 +27,40 @@ export default function Page() {
   const images = product.images || []
   const isPerKg = product.pricingType === 'PER_KG'
 
-  const price = isPerKg ? (product.pricePerKg ?? 0) : (product.price ?? 0)
-  const formattedPrice = isPerKg ? `£${price.toFixed(2)}/kg` : `£${price.toFixed(2)}`
+  // === FIXED: Convert pence to pounds for display ===
+  const priceInPence = isPerKg ? (product.pricePerKg ?? 0) : (product.price ?? 0)
+  const priceInPounds = priceInPence / 100
+
+  const formattedPrice = isPerKg 
+    ? `£${priceInPounds.toFixed(2)}/kg` 
+    : `£${priceInPounds.toFixed(2)}`
 
   const inStock = isPerKg 
     ? (product.stockKg ?? 0) > 0 
     : (product.stockQty ?? 0) > 0
 
   const handleAddToCart = () => {
-  addItem({
-    id: product.id,
-    name: product.name,
-    image: images[0]?.url || '/placeholder.png',
-    price,
-    qty: qty,                   
-    pricingType: product.pricingType || 'FIXED',   
-    totalPrice: price * qty,
-    detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
-  })
+    addItem({
+      id: product.id,
+      name: product.name,
+      image: images[0]?.url || '/placeholder.png',
+      price: priceInPounds,          
+      qty: qty,                   
+      pricingType: product.pricingType || 'FIXED',   
+      totalPrice: priceInPounds * qty,
+      detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
+    })
+    console.log("products",addItem)
 
- toast.success('Added to cart', {
-    id: `cart-${product.id}`,       
-    description: `${product.name} (${qty}${isPerKg ? 'kg' : ' items'}) added successfully`,
-  })
+    toast.success('Added to cart', {
+      id: `cart-${product.id}`,       
+      description: `${product.name} (${qty}${isPerKg ? 'kg' : ' items'}) added successfully`,
+    })
 
-  setAdded(true)
-  setTimeout(() => setAdded(false), 2000)
-}
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
+  }
+
   return (
     <div className="bg-white text-black pt-16">
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
@@ -64,7 +72,7 @@ export default function Page() {
           <div className="md:col-span-5 lg:col-span-5 md:sticky md:top-24 self-start">
             <ProductInfo
               product={product}
-              price={price}
+              price={priceInPounds}           // ← Pass pounds
               formattedPrice={formattedPrice}
               qty={qty}
               setQty={setQty}
@@ -76,11 +84,10 @@ export default function Page() {
         </div>
       </section>
 
-      {/* ── Description + How to use ── */}
+      {/* Description + How to use section - unchanged */}
       <section className="border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
-
             {/* Description */}
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-widest text-[#c9a96e] mb-4">
@@ -93,7 +100,6 @@ export default function Page() {
                 {product.description || 'No description available for this product.'}
               </p>
 
-              {/* Quick facts */}
               <div className="mt-8 grid grid-cols-2 gap-4">
                 {product.category && (
                   <div className="bg-gray-50 rounded-xl p-4">
@@ -122,7 +128,7 @@ export default function Page() {
               </div>
             </div>
 
-            {/* How to use */}
+            {/* How to use - unchanged */}
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-widest text-[#c9a96e] mb-4">
                 How to use
@@ -168,13 +174,11 @@ export default function Page() {
         </div>
       </section>
 
-      {/* ── Related products ── */}
       <section className="border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <RelatedProducts slug={product.slug} limit={4} />
         </div>
       </section>
-
     </div>
   )
 }

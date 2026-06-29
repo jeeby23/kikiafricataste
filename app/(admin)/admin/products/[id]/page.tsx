@@ -40,8 +40,8 @@ const schema = z
     pricePerKg: z.coerce.number({ error: 'Must be a number' }).positive().optional(),
     stockQty: z.coerce.number({ error: 'Must be a number' }).int().min(0).optional(),
     stockKg: z.coerce.number({ error: 'Must be a number' }).min(0).optional(),
-    minWeightKg: z.coerce.number({ error: 'Must be a number' }).min(0).optional(), 
-    stepWeightKg: z.coerce.number({ error: 'Must be a number' }).min(0).optional(), 
+    minWeightKg: z.coerce.number({ error: 'Must be a number' }).min(0).optional(),
+    stepWeightKg: z.coerce.number({ error: 'Must be a number' }).min(0).optional(),
     categoryId: z.string().optional(),
     isActive: z.boolean().default(false),
   })
@@ -95,6 +95,17 @@ export default function EditProductPage() {
   const isActive = watch('isActive')
   const categoryId = watch('categoryId')
 
+  const poundsToPence = (val: unknown): number | undefined => {
+    if (val === undefined || val === null || val === '' || val === 0) return undefined
+    const num = typeof val === 'string' ? parseFloat(val) : Number(val)
+    return isNaN(num) ? undefined : Math.round(num * 100)
+  }
+
+  const penceToPounds = (pence: number | null | undefined): number | undefined => {
+    if (pence == null || pence <= 0) return undefined
+    return pence / 100
+  }
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -106,17 +117,17 @@ export default function EditProductPage() {
           return
         }
         setProduct(found)
+
         reset({
           name: found.name,
           description: found.description ?? '',
           pricingType: found.pricingType ?? 'FIXED',
-          price: found.price ?? undefined,
-          pricePerKg: found.pricePerKg ?? undefined,
+          price: found.pricingType === 'FIXED' ? penceToPounds(found.price) : undefined,
+          pricePerKg: found.pricingType === 'PER_KG' ? penceToPounds(found.pricePerKg) : undefined,
           stockQty: found.stockQty ?? undefined,
           stockKg: found.stockKg ?? undefined,
-          minWeightKg: found.minWeightKg && found.minWeightKg > 0 ? found.minWeightKg : undefined, 
-          stepWeightKg:
-            found.stepWeightKg && found.stepWeightKg > 0 ? found.stepWeightKg : undefined, 
+          minWeightKg: found.minWeightKg && found.minWeightKg > 0 ? found.minWeightKg : undefined,
+          stepWeightKg: found.stepWeightKg && found.stepWeightKg > 0 ? found.stepWeightKg : undefined,
           categoryId: found.category?.id ?? '',
           isActive: found.isActive,
         })
@@ -127,17 +138,15 @@ export default function EditProductPage() {
       }
     }
     load()
-  }, [id])
+  }, [id, reset, router])
 
   const onSubmit = (values: FormValues) => {
-    console.log('📦 Submitting values:', values)
-
     const payload: Partial<CreateProductInput> = {
       name: values.name,
       description: values.description,
       pricingType: values.pricingType,
-      price: values.price as number | undefined,
-      pricePerKg: values.pricePerKg as number | undefined,
+      price: poundsToPence(values.price),
+      pricePerKg: poundsToPence(values.pricePerKg),
       stockQty: values.stockQty as number | undefined,
       stockKg: values.stockKg as number | undefined,
       minWeightKg: values.minWeightKg as number | undefined,
@@ -146,27 +155,23 @@ export default function EditProductPage() {
       isActive: values.isActive ?? false,
     }
 
-    console.log('📤 Payload:', payload)
+    console.log('📤 Payload to backend:', payload)
 
-    updateProduct.mutate(
-      { id, payload },
-      {
-        onSuccess: (res: any) => {
-          console.log(' Update success:', res)
-          if (res?.error) {
-            alert(res.error)
-            return
-          }
-          setSuccessMsg('Product updated successfully!')
-          setTimeout(() => setSuccessMsg(''), 3000)
-          if (res?.data) setProduct(res.data)
-        },
-        onError: (err: any) => {
-          console.error(' Update error:', err?.response?.data || err?.message || err)
-          alert('Failed: ' + (err?.response?.data?.error || err?.message || 'Unknown error'))
-        },
+    updateProduct.mutate({ id, payload }, {
+      onSuccess: (res: any) => {
+        if (res?.error) {
+          alert(res.error)
+          return
+        }
+        setSuccessMsg('Product updated successfully!')
+        setTimeout(() => setSuccessMsg(''), 3000)
+        if (res?.data) setProduct(res.data)
       },
-    )
+      onError: (err: any) => {
+        console.error(err)
+        alert('Failed to update product')
+      },
+    })
   }
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return
@@ -190,7 +195,7 @@ export default function EditProductPage() {
     setNewFiles([])
     setNewPreviews([])
     setUploadedCount(0)
-  
+
     const data = await getAdminProducts(1, 100)
     const found = data.products.find((p) => p.id === id)
     if (found) setProduct(found)
@@ -353,8 +358,12 @@ export default function EditProductPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="FIXED" className='text-gray-700'>Fixed Price</SelectItem>
-                          <SelectItem value="PER_KG" className='text-gray-700'>Per KG</SelectItem>
+                          <SelectItem value="FIXED" className="text-gray-700">
+                            Fixed Price
+                          </SelectItem>
+                          <SelectItem value="PER_KG" className="text-gray-700">
+                            Per KG
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -417,7 +426,12 @@ export default function EditProductPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Price per KG (£) <span className="text-red-500">*</span>
                         </label>
-                        <Input type="number" {...register('pricePerKg')} placeholder="e.g. 15.00" className='text-gray-700' />
+                        <Input
+                          type="number"
+                          {...register('pricePerKg')}
+                          placeholder="e.g. 15.00"
+                          className="text-gray-700"
+                        />
                         {errors.pricePerKg && (
                           <p className="text-xs text-red-500 mt-1">{errors.pricePerKg.message}</p>
                         )}
@@ -431,7 +445,7 @@ export default function EditProductPage() {
                           step="0.01"
                           {...register('stockKg')}
                           placeholder="e.g. 20.5"
-                          className='text-gray-700'
+                          className="text-gray-700"
                         />
                       </div>
                     </div>
@@ -463,7 +477,7 @@ export default function EditProductPage() {
                           step="0.01"
                           {...register('minWeightKg')}
                           placeholder="0.25"
-                          className='text-gray-700'
+                          className="text-gray-700"
                         />
                       </div>
                       <div>
@@ -475,7 +489,7 @@ export default function EditProductPage() {
                           step="0.01"
                           {...register('stepWeightKg')}
                           placeholder="0.25"
-                           className='text-gray-700'
+                          className="text-gray-700"
                         />
                       </div>
                     </div>
@@ -674,7 +688,7 @@ export default function EditProductPage() {
                 onClick={() => {
                   if (!confirm(`Delete "${product.name}"? This will hide it from the store.`))
                     return
-                 
+
                   import('@/features/products/products.api').then(({ deleteProduct: del }) => {
                     del(product.id).then(() => router.push('/admin/products'))
                   })

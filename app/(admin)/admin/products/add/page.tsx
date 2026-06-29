@@ -1,12 +1,10 @@
 'use client'
-
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -17,10 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-
 import { useCreateProduct, useCategories } from '@/features/products/products.query'
 import { Product } from '@/types/products.types'
-
 import { productFormSchema, type FormValues } from '@/schema/product.schema'
 import { ImagePanel } from '@/components/admin/product/image-panel'
 import { CategoryManager } from '@/components/admin/product/category-manager'
@@ -47,16 +43,21 @@ export default function AddProductPage() {
   const isActive = watch('isActive')
   const categoryId = watch('categoryId')
 
+  // === Price Conversion (pounds ↔ pence) ===
+  const poundsToPence = (val: unknown): number | undefined => {
+    if (val === undefined || val === null || val === '') return undefined
+    const num = typeof val === 'string' ? parseFloat(val) : Number(val)
+    return isNaN(num) ? undefined : Math.round(num * 100)
+  }
+
   const submitForm = (isActiveOverride: boolean) => {
-     console.log("submitForm called")
-     
     handleSubmit((values) => {
       const payload = {
         name: values.name,
         description: values.description,
         pricingType: values.pricingType,
-        price: values.price !== undefined ? Number(values.price) : undefined,
-        pricePerKg: values.pricePerKg !== undefined ? Number(values.pricePerKg) : undefined,
+        price: poundsToPence(values.price),
+        pricePerKg: poundsToPence(values.pricePerKg),
         stockQty: values.stockQty !== undefined ? Number(values.stockQty) : undefined,
         stockKg: values.stockKg !== undefined ? Number(values.stockKg) : undefined,
         minWeightKg: values.minWeightKg !== undefined ? Number(values.minWeightKg) : undefined,
@@ -64,8 +65,8 @@ export default function AddProductPage() {
         categoryId: values.categoryId?.trim() || undefined,
         isActive: isActiveOverride,
       }
-      console.log("payload", payload)
 
+      console.log('Sending to backend (pence):', payload)
       createProduct.mutate(payload, {
         onSuccess: (res) => {
           if (res.error) {
@@ -80,21 +81,15 @@ export default function AddProductPage() {
         },
         onError: (err: any) => {
           console.error('🔴 API ERROR:', err?.response?.data || err)
-          alert('Failed to create product (check console)')
+          alert('Failed to create product')
         },
       })
     })()
   }
 
   if (createdProduct) {
-    return (
-      <ImagePanel
-        product={createdProduct}
-        onDone={() => router.push('/admin/products')}
-      />
-    )
+    return <ImagePanel product={createdProduct} onDone={() => router.push('/admin/products')} />
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -125,12 +120,10 @@ export default function AddProductPage() {
             <button
               type="button"
               onClick={() => {
+                console.log('🔥 Publish button clicked')
 
-  console.log("🔥 Publish button clicked")
-
-  submitForm(true)
-
-}}
+                submitForm(true)
+              }}
               disabled={createProduct.isPending}
               className="px-5 py-2 text-sm font-semibold text-white bg-black/70 rounded-lg hover:bg-black/80 transition disabled:opacity-50"
             >
@@ -140,10 +133,14 @@ export default function AddProductPage() {
         </div>
 
         <div className="flex items-center gap-2 mb-6">
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-            isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+          <span
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+              isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}
+            />
             {isActive ? 'Will be published' : 'Draft'}
           </span>
         </div>
@@ -166,7 +163,9 @@ export default function AddProductPage() {
                     type="button"
                     onClick={() => setActiveTab(tab)}
                     className={`flex-1 py-2 text-sm font-medium rounded-md transition capitalize ${
-                      activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      activeTab === tab
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     {tab}
@@ -180,8 +179,14 @@ export default function AddProductPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Product Name <span className="text-red-500">*</span>
                     </label>
-                    <Input {...register('name')} placeholder="e.g. Goat Meat" className="text-gray-700" />
-                    {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+                    <Input
+                      {...register('name')}
+                      placeholder="e.g. Goat Meat"
+                      className="text-gray-700"
+                    />
+                    {errors.name && (
+                      <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -191,9 +196,15 @@ export default function AddProductPage() {
                       </label>
                       <Select
                         value={pricingType}
-                        onValueChange={(val) => setValue('pricingType', val as 'FIXED' | 'PER_KG', { shouldValidate: true })}
+                        onValueChange={(val) =>
+                          setValue('pricingType', val as 'FIXED' | 'PER_KG', {
+                            shouldValidate: true,
+                          })
+                        }
                       >
-                        <SelectTrigger><SelectValue placeholder="Choose pricing type" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose pricing type" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="FIXED">Fixed Price</SelectItem>
                           <SelectItem value="PER_KG">Per KG</SelectItem>
@@ -202,12 +213,21 @@ export default function AddProductPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
-                      <Select value={categoryId ?? ''} onValueChange={(val) => setValue('categoryId', val)}>
-                        <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Category
+                      </label>
+                      <Select
+                        value={categoryId ?? ''}
+                        onValueChange={(val) => setValue('categoryId', val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
                         <SelectContent>
                           {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -220,12 +240,26 @@ export default function AddProductPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Price (£) <span className="text-red-500">*</span>
                         </label>
-                        <Input type="number" {...register('price')} placeholder="e.g. 29.99" className="text-gray-700" />
-                        {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price.message}</p>}
+                        <Input
+                          type="number"
+                          {...register('price')}
+                          placeholder="e.g. 29.99"
+                          className="text-gray-700"
+                        />
+                        {errors.price && (
+                          <p className="text-xs text-red-500 mt-1">{errors.price.message}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Stock Quantity</label>
-                        <Input type="number" {...register('stockQty')} placeholder="e.g. 50" className="text-gray-700" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Stock Quantity
+                        </label>
+                        <Input
+                          type="number"
+                          {...register('stockQty')}
+                          placeholder="e.g. 50"
+                          className="text-gray-700"
+                        />
                       </div>
                     </div>
                   )}
@@ -236,18 +270,35 @@ export default function AddProductPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                           Price per KG (£) <span className="text-red-500">*</span>
                         </label>
-                        <Input type="number" {...register('pricePerKg')} placeholder="e.g. 15.00" className="text-gray-700" />
-                        {errors.pricePerKg && <p className="text-xs text-red-500 mt-1">{errors.pricePerKg.message}</p>}
+                        <Input
+                          type="number"
+                          {...register('pricePerKg')}
+                          placeholder="e.g. 15.00"
+                          className="text-gray-700"
+                        />
+                        {errors.pricePerKg && (
+                          <p className="text-xs text-red-500 mt-1">{errors.pricePerKg.message}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Stock (KG)</label>
-                        <Input type="number" step="0.01" {...register('stockKg')} placeholder="e.g. 20.5" className="text-gray-700" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Stock (KG)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...register('stockKg')}
+                          placeholder="e.g. 20.5"
+                          className="text-gray-700"
+                        />
                       </div>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Description
+                    </label>
                     <Textarea
                       {...register('description')}
                       placeholder="Write a short description..."
@@ -262,12 +313,28 @@ export default function AddProductPage() {
                   {pricingType === 'PER_KG' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Min Weight (KG)</label>
-                        <Input type="number" step="0.01" {...register('minWeightKg')} placeholder="0.25" className="text-gray-700" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Min Weight (KG)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...register('minWeightKg')}
+                          placeholder="0.25"
+                          className="text-gray-700"
+                        />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Step Weight (KG)</label>
-                        <Input type="number" step="0.01" {...register('stepWeightKg')} placeholder="0.25" className="text-gray-700" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Step Weight (KG)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...register('stepWeightKg')}
+                          placeholder="0.25"
+                          className="text-gray-700"
+                        />
                       </div>
                     </div>
                   )}
@@ -275,9 +342,14 @@ export default function AddProductPage() {
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <div>
                       <p className="text-sm font-medium text-gray-700">Publish immediately</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Toggle to make product visible to customers</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Toggle to make product visible to customers
+                      </p>
                     </div>
-                    <Switch checked={isActive} onCheckedChange={(val) => setValue('isActive', val)} />
+                    <Switch
+                      checked={isActive}
+                      onCheckedChange={(val) => setValue('isActive', val)}
+                    />
                   </div>
                 </div>
               )}

@@ -17,12 +17,9 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'lowest',  label: 'Lowest total'  },
 ]
 
-// subtotal → pounds as-is
-// deliveryFee → pence, divide by 100
-// total (DB) is mixed so we recompute: subtotal + deliveryFee/100
-const fmtPounds = (v: number) => `£${Number(v).toFixed(2)}`
-const fmtPence  = (v: number) => `£${(v / 100).toFixed(2)}`
-const calcTotal = (subtotal: number, deliveryFee: number) => subtotal + deliveryFee / 100
+const fmtPounds = (v: number) => `£${Number(v || 0).toFixed(2)}`
+const fmtPence  = (v: number) => `£${(Number(v || 0) / 100).toFixed(2)}`
+const calcTotal = (subtotal: number, deliveryFee: number) => (subtotal || 0) + (deliveryFee || 0) / 100
 
 const LIMIT = 20
 

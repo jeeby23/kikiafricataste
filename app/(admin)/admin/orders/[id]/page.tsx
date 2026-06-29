@@ -10,11 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { useOrderById, useConfirmOrder, useCancelOrder } from '@/features/orders/orders.query'
 import PageLoader from '@/components/shared/PageLoader'
 
-// subtotal → already pounds
-// deliveryFee → pence, divide by 100
-// total (DB) is mixed — always recompute
-const fmtPounds = (v: number) => `£${Number(v).toFixed(2)}`
-const fmtPence  = (v: number) => `£${(v / 100).toFixed(2)}`
+const fmtPounds = (v: number) => `£${Number(v || 0).toFixed(2)}`
+const fmtPence  = (v: number) => `£${(Number(v || 0) / 100).toFixed(2)}`
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -52,9 +49,8 @@ export default function OrderDetailPage() {
   const isConfirmed = order.status === 'CONFIRMED'
   const isCancelled = order.status === 'CANCELLED'
 
-  // recompute correct total: subtotal (£) + deliveryFee (pence) / 100
-  const trueTotal = order.subtotal + order.deliveryFee / 100
-
+  // Subtotal is already in pounds from backend
+  const trueTotal = (order.subtotal || 0) + (order.deliveryFee || 0) / 100
   return (
     <div className="min-h-screen bg-gray-50 text-gray-700">
       <div className="max-w-6xl mx-auto p-6">
@@ -124,7 +120,7 @@ export default function OrderDetailPage() {
                       </p>
                     </div>
                     {/* item.subtotal — same unit as order.subtotal (pounds) */}
-                    <div className="text-right font-medium">{fmtPounds(item.subtotal)}</div>
+                    <div className="text-right font-medium">{fmtPence(item.subtotal)}</div>
                   </div>
                 ))}
               </div>
