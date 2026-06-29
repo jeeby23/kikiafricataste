@@ -151,8 +151,8 @@ export async function POST(req: NextRequest) {
     return created;
   });
 
-  // Notify — non-blocking
-  sendPaymentDetails({
+  // Notify — blocking temporarily to catch errors
+  await sendPaymentDetails({
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
@@ -168,10 +168,9 @@ export async function POST(req: NextRequest) {
       unitPrice: i.unitPrice,
       subtotal: i.subtotal,
     })),
-  }).catch(console.error);
+  });
 
-  // call in orders route
-  sendNewOrderAlert({
+  await sendNewOrderAlert({
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
@@ -186,7 +185,7 @@ export async function POST(req: NextRequest) {
       unitPrice: i.unitPrice,
       subtotal: i.subtotal,
     })),
-  }).catch(console.error);
+  });
 
   return ok(
     {
