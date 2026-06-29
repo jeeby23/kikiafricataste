@@ -45,7 +45,7 @@ export async function PATCH(
     orderNumber: order.orderNumber,
     customerName: order.customerName,
     customerEmail: order.customerEmail,
-  }).catch(console.error);
+  });
 
   return ok({ cancelled: true });
 }

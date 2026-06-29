@@ -38,7 +38,7 @@ export async function PATCH(
       unitPrice: i.unitPrice,
       subtotal: i.subtotal,
     })),
-  }).catch(console.error);
+  });
 
   return ok(updated);
 }
