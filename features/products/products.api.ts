@@ -69,10 +69,10 @@ export const updateProduct = async (id: string, payload: Partial<CreateProductIn
   return res.data
 }
 
-export const draftProduct = async (id: string) => {
- const res = await axios.patch(`/admin/product/${id}`, { isActive: false })
-  return res.data
-}
+// export const draftProduct = async (id: string) => {
+//   const res = await axios.put(`/admin/product/${id}`, { isActive: false })
+//   return res.data
+// }
 
 export const deleteProduct = async (id: string) => {
   const res = await axios.delete(`/admin/product/${id}?hard=true`)

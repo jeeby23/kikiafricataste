@@ -3,7 +3,7 @@ import {
   getProducts, getProductBySlug, getRelatedProducts, getAdminProducts,
   getCategories, createCategory, updateCategory, deleteCategory,
   createProduct, updateProduct, deleteProduct,
-  toggleProductStatus, uploadProductImage, deleteProductImage,draftProduct,
+  toggleProductStatus, uploadProductImage, deleteProductImage,
 } from './products.api'
 import { CreateProductInput } from '@/types/products.types'
 
@@ -36,13 +36,7 @@ export const useProduct = (slug: string) => {
   })
 }
 
-/**
- * Related products for a given slug.
- * - Enabled only when slug is available.
- * - Long staleTime since related products rarely change.
- * - Prefetch-friendly: queryKey includes slug + limit so sibling pages
- *   can prefetch via queryClient.prefetchQuery with the same key.
- */
+
 export const useRelatedProducts = (slug: string, limit = 4) => {
   return useQuery({
     queryKey: ['related-products', slug, limit],
@@ -109,24 +103,24 @@ export const useUpdateProduct = () => {
   })
 }
 
-export const useDraftProduct = () => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => draftProduct(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['admin-products'],
-      })
-    },
+// export const useDraftProduct = () => {
+//   const queryClient = useQueryClient()
+//   return useMutation({
+//     mutationFn: (id: string) => draftProduct(id),
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({
+//         queryKey: ['admin-products'],
+//       })
+//     },
 
-    onError: (err: any) => {
-      console.error(
-        '❌ DRAFT PRODUCT ERROR:',
-        err?.response?.data || err
-      )
-    },
-  })
-}
+//     onError: (err: any) => {
+//       console.error(
+//         '❌ DRAFT PRODUCT ERROR:',
+//         err?.response?.data || err
+//       )
+//     },
+//   })
+// }
 
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient()

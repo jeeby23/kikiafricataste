@@ -113,8 +113,11 @@ export default function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={item.path} className="flex items-center gap-3">
-                        {/* <item.icon className="w-5 h-5" /> */}
+                      <Link
+                        href={item.path}
+                        onClick={() => setOpenMobile(false)}
+                        className="flex items-center gap-3"
+                      >
                         <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>

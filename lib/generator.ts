@@ -6,8 +6,11 @@ export async function generateOrderNumber(): Promise<string> {
     select: { orderNumber: true },
   });
 
-  if (!last) return "ORD-0001";
+  const base = last
+    ? parseInt(last.orderNumber.replace("ORD-", ""), 10) + 1
+    : 1;
 
-  const num = parseInt(last.orderNumber.replace("ORD-", ""), 10);
-  return `ORD-${String(num + 1).padStart(4, "0")}`;
+  // Random 2-digit suffix breaks ties when two requests read the same base
+  const suffix = Math.floor(Math.random() * 90 + 10);
+  return `ORD-${String(base).padStart(4, "0")}-${suffix}`;
 }
