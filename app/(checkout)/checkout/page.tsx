@@ -108,7 +108,6 @@ export default function CheckoutPage() {
       return
     }
 
-    // Additional safety for different possible response shapes
     if (res?.data?.error) {
       toast.error(res.data.error)
       return
@@ -176,7 +175,7 @@ console.log( "orderdata",orderData.deliveryFee)
                   placeholder="Mobile number of recipient"
                   value={form.recipientPhone}
                   onChange={(e) => handleInputChange('recipientPhone', e.target.value)}
-                  className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400 ${errors.recipientPhone ? 'border-red-500' : ''}`}
+                  className={`h-11 rounded-md border-gray-300 shadow-none  placeholder:text-gray-400 text-base focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400 ${errors.recipientPhone ? 'border-red-500' : ''}`}
                 />
                 {errors.recipientPhone && (
                   <p className="text-xs text-red-500 mt-1">{errors.recipientPhone}</p>
@@ -191,7 +190,7 @@ console.log( "orderdata",orderData.deliveryFee)
                 <button
                   type="button"
                   onClick={() => setDeliveryMethod('ship')}
-                  className={`flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition ${deliveryMethod === 'ship' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-black'}`}
+                  className={`flex items-center justify-center gap-2 py-2 text-base font-medium rounded-md transition ${deliveryMethod === 'ship' ? 'bg-white text-black shadow-sm text-base' : 'text-gray-500 hover:text-black'}`}
                 >
                   <Truck className="w-5 h-5" />
                   Ship
@@ -228,7 +227,7 @@ console.log( "orderdata",orderData.deliveryFee)
                       placeholder="Your name"
                       value={form.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.firstName ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 text-base shadow-none text-sm placeholder:text-gray-400 ${errors.firstName ? 'border-red-500' : ''}`}
                     />
                     {errors.firstName && (
                       <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>
@@ -239,7 +238,7 @@ console.log( "orderdata",orderData.deliveryFee)
                       placeholder="Last name"
                       value={form.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.lastName ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 text-base shadow-none placeholder:text-gray-400 ${errors.lastName ? 'border-red-500' : ''}`}
                     />
                     {errors.lastName && (
                       <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>
@@ -252,7 +251,7 @@ console.log( "orderdata",orderData.deliveryFee)
                     placeholder="Address you are sending package to"
                     value={form.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
-                    className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.address ? 'border-red-500' : ''}`}
+                    className={`h-11 rounded-md text-base border-gray-300 shadow-none  placeholder:text-gray-400 ${errors.address ? 'border-red-500' : ''}`}
                   />
                   {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
                 </div>
@@ -262,7 +261,7 @@ console.log( "orderdata",orderData.deliveryFee)
                     placeholder="Email"
                     value={form.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.email ? 'border-red-500' : ''}`}
+                    className={`h-11 rounded-md text-base border-gray-300 shadow-none placeholder:text-gray-400 ${errors.email ? 'border-red-500' : ''}`}
                   />
                   {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
                 </div>
@@ -273,7 +272,7 @@ console.log( "orderdata",orderData.deliveryFee)
                       placeholder="City"
                       value={form.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.city ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 shadow-none text-base placeholder:text-gray-400 ${errors.city ? 'border-red-500' : ''}`}
                     />
                     {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
                   </div>
@@ -282,7 +281,7 @@ console.log( "orderdata",orderData.deliveryFee)
                       placeholder="Postal code"
                       value={form.postalCode}
                       onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.postalCode ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 text-base shadow-none placeholder:text-gray-400 ${errors.postalCode ? 'border-red-500' : ''}`}
                     />
                     {errors.postalCode && (
                       <p className="text-xs text-red-500 mt-1">{errors.postalCode}</p>
@@ -299,7 +298,7 @@ console.log( "orderdata",orderData.deliveryFee)
                   placeholder="Your phone number for whatsapp order updates"
                   value={form.whatsappPhone}
                   onChange={(e) => handleInputChange('whatsappPhone', e.target.value)}
-                  className="h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 pr-10"
+                  className="h-11 rounded-md border-gray-300 shadow-none text-base placeholder:text-gray-400 pr-10"
                 />
                 <HelpCircle className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" />
               </div>
@@ -347,7 +346,7 @@ console.log( "orderdata",orderData.deliveryFee)
           </form>
         </div>
 
-        <div className="bg-[#fff9f9] p-6 md:p-12 lg:pl-12 border-l border-gray-100">
+        <div className="bg-gray-200/70 p-6 md:p-12 lg:pl-12 border-l border-gray-100">
           <div className="max-w-[440px] mr-auto w-full space-y-6">
 
             <div className="space-y-4">
@@ -379,7 +378,7 @@ console.log( "orderdata",orderData.deliveryFee)
                 placeholder="Discount code or gift card"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-                className="h-10 rounded-md border-gray-300 bg-white shadow-none text-sm placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400"
+                className="h-10 rounded-md border-gray-300 bg-white shadow-none text-sm placeholder:text-gray-400 focus-visible:ring-1 text-base focus-visible:ring-gray-400"
               />
               <Button
                 type="button"

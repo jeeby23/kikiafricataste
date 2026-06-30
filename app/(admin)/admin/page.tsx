@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { useAdminOrders } from '@/features/orders/orders.query'
+
 export const dynamic = 'force-dynamic'
+
 export default function AdminDashboard() {
   const { data, isLoading } = useAdminOrders(1)
 
@@ -17,64 +19,90 @@ export default function AdminDashboard() {
     .reduce((sum, o) => sum + o.total, 0)
 
   return (
-    <div className="space-y-6 p-3 sm:p-4 md:p-6">
-      <h1 className="text-xl sm:text-2xl font-semibold text-black">Dashboard</h1>
+    <div className="mx-auto w-full max-w-7xl space-y-5 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+      <h1 className="text-xl font-semibold text-black sm:text-2xl md:text-3xl">
+        Dashboard
+      </h1>
 
-      {/* Stats grid — 2 cols on mobile, 3 on sm, 5 on md+ */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
-        <div className="bg-white p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Total Orders</h3>
-          <p className="text-xl sm:text-2xl font-bold text-gray-600 mt-1">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 md:gap-4">
+        <div className="rounded-xl bg-white p-4 shadow min-h-[110px] flex flex-col justify-between">
+          <h3 className="text-xs text-gray-500 sm:text-sm">
+            Total Orders
+          </h3>
+
+          <p className="break-words text-2xl font-bold text-gray-700 sm:text-3xl">
             {isLoading ? '...' : totalOrders}
           </p>
         </div>
 
-        <div className="bg-yellow-50 p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Pending</h3>
-          <p className="text-xl sm:text-2xl font-bold text-yellow-600 mt-1">
+        <div className="rounded-xl bg-yellow-50 p-4 shadow min-h-[110px] flex flex-col justify-between">
+          <h3 className="text-xs text-gray-500 sm:text-sm">
+            Pending
+          </h3>
+
+          <p className="break-words text-2xl font-bold text-yellow-600 sm:text-3xl">
             {isLoading ? '...' : pendingOrders}
           </p>
         </div>
 
-        <div className="bg-green-50 p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Paid</h3>
-          <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1">
+        <div className="rounded-xl bg-green-50 p-4 shadow min-h-[110px] flex flex-col justify-between">
+          <h3 className="text-xs text-gray-500 sm:text-sm">
+            Paid
+          </h3>
+
+          <p className="break-words text-2xl font-bold text-green-600 sm:text-3xl">
             {isLoading ? '...' : paidOrders}
           </p>
         </div>
 
-        <div className="bg-red-50 p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Cancelled</h3>
-          <p className="text-xl sm:text-2xl font-bold text-red-600 mt-1">
+        <div className="rounded-xl bg-red-50 p-4 shadow min-h-[110px] flex flex-col justify-between">
+          <h3 className="text-xs text-gray-500 sm:text-sm">
+            Cancelled
+          </h3>
+
+          <p className="break-words text-2xl font-bold text-red-600 sm:text-3xl">
             {isLoading ? '...' : cancelledOrders}
           </p>
         </div>
 
-        {/* Revenue card spans full width on mobile so the number isn't cramped */}
-        <div className="col-span-2 sm:col-span-1 bg-white p-4 sm:p-5 rounded-lg shadow border border-green-200">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Revenue (Paid)</h3>
-          <p className="text-xl sm:text-2xl font-bold text-green-700 mt-1">
+        <div className="col-span-2 rounded-xl border border-green-200 bg-white p-4 shadow min-h-[110px] flex flex-col justify-between sm:col-span-1">
+          <h3 className="text-xs text-gray-500 sm:text-sm">
+            Revenue (Paid)
+          </h3>
+
+          <p className="break-words text-xl font-bold text-green-700 sm:text-2xl lg:text-3xl">
             {isLoading ? '...' : `£${totalRevenue.toLocaleString()}`}
           </p>
         </div>
       </div>
 
-      {/* Quick-link cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      {/* Quick Links */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:gap-6">
         <Link
           href="/admin/orders"
-          className="bg-white p-5 sm:p-6 rounded-lg shadow hover:shadow-lg transition"
+          className="rounded-xl bg-white p-5 shadow transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
         >
-          <h3 className="font-semibold text-gray-700 text-sm sm:text-base">📦 View All Orders</h3>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">Manage customer orders & payments</p>
+          <h3 className="text-base font-semibold text-gray-700">
+            📦 View All Orders
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-gray-500">
+            Manage customer orders & payments
+          </p>
         </Link>
 
         <Link
           href="/admin/products"
-          className="bg-white p-5 sm:p-6 rounded-lg shadow hover:shadow-lg transition"
+          className="rounded-xl bg-white p-5 shadow transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
         >
-          <h3 className="font-semibold text-gray-700 text-sm sm:text-base">🛍️ Manage Products</h3>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">Add, edit or remove products</p>
+          <h3 className="text-base font-semibold text-gray-700">
+            🛍️ Manage Products
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-gray-500">
+            Add, edit or remove products
+          </p>
         </Link>
       </div>
     </div>
