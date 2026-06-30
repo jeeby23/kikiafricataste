@@ -3,7 +3,7 @@ import { sendMail } from "./mailer";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
- export function formatPrice(cents: number): string {
+export function formatPrice(cents: number): string {
   return `£${(cents / 100).toFixed(2)}`;
 }
 type OrderItemDetail = {
@@ -195,12 +195,12 @@ export async function sendNewOrderAlert(order: {
   });
 }
 
-// ─── Order confirmed ───────────────────────────────────────────
+// ─── Order confirmed
 
 export async function sendOrderConfirmed(order: {
   orderNumber: string;
   customerName: string;
-  customerEmail: string | null;
+  customerEmail: string;
   total: number;
   items: OrderItemDetail[];
 }) {
