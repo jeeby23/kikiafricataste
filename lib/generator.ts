@@ -1,16 +1,35 @@
 import { prisma } from "./prisma";
 
 export async function generateOrderNumber(): Promise<string> {
-  const last = await prisma.order.findFirst({
-    orderBy: { createdAt: "desc" },
-    select: { orderNumber: true },
-  });
+  // keep trying until we find a number that doesn't exist
+  let attempts = 0;
 
-  const base = last
-    ? parseInt(last.orderNumber.replace("ORD-", ""), 10) + 1
-    : 1;
+  while (attempts < 10) {
+    const last = await prisma.order.findFirst({
+      orderBy: { orderNumber: "desc" },
+      select: { orderNumber: true },
+    });
 
-  // Random 2-digit suffix breaks ties when two requests read the same base
-  const suffix = Math.floor(Math.random() * 90 + 10);
-  return `ORD-${String(base).padStart(4, "0")}-${suffix}`;
+    if (!last) return "ORD-0001";
+
+    const num = parseInt(last.orderNumber.replace("ORD-", ""), 10);
+
+    if (isNaN(num)) {
+      attempts++;
+      continue;
+    }
+
+    const next = `ORD-${String(num + 1).padStart(4, "0")}`;
+
+    const existing = await prisma.order.findUnique({
+      where: { orderNumber: next },
+    });
+
+    if (!existing) return next;
+
+    attempts++;
+  }
+
+  // fallback
+  return `ORD-${Date.now().toString().slice(-6)}`;
 }
