@@ -121,7 +121,7 @@ export default function OrderConfirmation() {
 
                 <div className="text-sm text-gray-600">
                   Kindly make payment within <strong>30 minutes</strong>.<br />
-                  Payment confirmation will be sent to your WhatsApp number.
+                  Payment confirmation will be sent to your email.
                 </div>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function OrderConfirmation() {
                 </div>
                 <div>
                   <p className="font-medium mb-1">Payment Method</p>
-                  <p>Bank Transfer • £{subtotal.toFixed(2)}</p>
+                  <p>Bank Transfer • £{displayTotal.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="font-medium mb-1">Billing Address</p>
