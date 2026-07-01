@@ -21,8 +21,22 @@ const fmtPounds = (v: number) => `£${Number(v || 0).toFixed(2)}`
 const fmtPence = (v: number) => `£${(Number(v || 0) / 100).toFixed(2)}`
 
 const toPounds = (pence: number) => Number(pence || 0) / 100
-const calcTotal = (subtotalPence: number, deliveryFeePence: number) =>
-  toPounds(subtotalPence) + toPounds(deliveryFeePence)
+
+// Helper function to dynamically check if an individual order object is configured for pickup
+const checkIfPickup = (order: any) => {
+  return (
+    order?.deliveryPostCode === 'PICKUP' || 
+    order?.deliveryAddress?.toLowerCase().includes('pickup') || 
+    order?.deliveryAddress?.toLowerCase().includes('store pickup')
+  )
+}
+
+// Calculate total contextually based on the individual order's fulfillment method
+const calcTotal = (order: any) => {
+  const subtotalPounds = toPounds(order.subtotal)
+  const deliveryPounds = checkIfPickup(order) ? 0 : toPounds(order.deliveryFee)
+  return subtotalPounds + deliveryPounds
+}
 
 const LIMIT = 20
 
@@ -74,9 +88,9 @@ export default function OrdersPage() {
       case 'oldest':
         return copy.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       case 'highest':
-        return copy.sort((a, b) => calcTotal(b.subtotal, b.deliveryFee) - calcTotal(a.subtotal, a.deliveryFee))
+        return copy.sort((a, b) => calcTotal(b) - calcTotal(a))
       case 'lowest':
-        return copy.sort((a, b) => calcTotal(a.subtotal, a.deliveryFee) - calcTotal(b.subtotal, b.deliveryFee))
+        return copy.sort((a, b) => calcTotal(a) - calcTotal(b))
       default:
         return copy
     }
@@ -187,7 +201,7 @@ export default function OrdersPage() {
 
     
       <div className="bg-white rounded-2xl shadow border overflow-visible">
-        {/* Mobile */}
+        {/* Mobile View */}
         <div className="md:hidden divide-y divide-gray-100">
           {orders.length === 0 ? (
             <div className="p-10 text-center text-gray-400 text-sm">No orders found</div>
@@ -205,7 +219,7 @@ export default function OrdersPage() {
                 <div className="flex justify-between items-center mb-3">
                   <p className="text-sm font-medium text-gray-900 truncate max-w-[60%]">{order.customerName}</p>
                   <p className="text-sm font-semibold">
-                    {fmtPounds(calcTotal(order.subtotal, order.deliveryFee))}
+                    {fmtPounds(calcTotal(order))}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-3">
@@ -215,6 +229,11 @@ export default function OrdersPage() {
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                     {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                   </span>
+                  {checkIfPickup(order) && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
+                      Pickup
+                    </span>
+                  )}
                 </div>
                 <Link
                   href={`/admin/orders/${order.id}`}
@@ -227,7 +246,7 @@ export default function OrdersPage() {
           )}
         </div>
 
-        {/* Desktop */}
+        {/* Desktop View */}
         <div className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px]">
@@ -250,50 +269,59 @@ export default function OrdersPage() {
                     <td colSpan={9} className="p-12 text-center text-gray-400 text-sm">No orders found</td>
                   </tr>
                 ) : (
-                  orders.map((order) => (
-                    <tr key={order.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
-                      <td className="p-4 font-medium text-sm">
-                        <Link href={`/admin/orders/${order.id}`} className="hover:underline">
-                          #{order.orderNumber}
-                        </Link>
-                      </td>
-                      <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
-                        {new Date(order.createdAt).toLocaleDateString('en-GB', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </td>
-                      <td className="p-4 text-sm max-w-[160px] truncate">{order.customerName}</td>
+                  orders.map((order) => {
+                    const isPickup = checkIfPickup(order);
+                    return (
+                      <tr key={order.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                        <td className="p-4 font-medium text-sm">
+                          <Link href={`/admin/orders/${order.id}`} className="hover:underline">
+                            #{order.orderNumber}
+                          </Link>
+                        </td>
+                        <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
+                          {new Date(order.createdAt).toLocaleDateString('en-GB', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="p-4 text-sm max-w-[160px] truncate">{order.customerName}</td>
 
-                      <td className="p-4 text-sm whitespace-nowrap">{fmtPounds(toPounds(order.subtotal))}</td>
+                        <td className="p-4 text-sm whitespace-nowrap">{fmtPounds(toPounds(order.subtotal))}</td>
 
-                      <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
-                        {order.deliveryFee === 0 ? 'Free' : fmtPence(order.deliveryFee)}
-                      </td>
+                        <td className="p-4 text-sm whitespace-nowrap">
+                          {isPickup ? (
+                            <span className="text-green-600 font-medium">Free (Pickup)</span>
+                          ) : order.deliveryFee === 0 ? (
+                            'Free'
+                          ) : (
+                            fmtPence(order.deliveryFee)
+                          )}
+                        </td>
 
-                      <td className="p-4 font-semibold text-sm whitespace-nowrap">
-                        {fmtPounds(calcTotal(order.subtotal, order.deliveryFee))}
-                      </td>
+                        <td className="p-4 font-semibold text-sm whitespace-nowrap">
+                          {fmtPounds(calcTotal(order))}
+                        </td>
 
-                      <td className="p-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${getStatusClass(order.status)}`}>
-                          {getStatusLabel(order.status)}
-                        </span>
-                      </td>
-                      <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
-                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                      </td>
-                      <td className="p-4 text-right">
-                        <Link
-                          href={`/admin/orders/${order.id}`}
-                          className="text-blue-600 bg-blue-100 py-1.5 px-3 hover:bg-blue-200 text-sm font-medium whitespace-nowrap rounded-full transition-colors"
-                        >
-                          View →
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="p-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${getStatusClass(order.status)}`}>
+                            {getStatusLabel(order.status)}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm text-gray-500 whitespace-nowrap">
+                          {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                        </td>
+                        <td className="p-4 text-right">
+                          <Link
+                            href={`/admin/orders/${order.id}`}
+                            className="text-blue-600 bg-blue-100 py-1.5 px-3 hover:bg-blue-200 text-sm font-medium whitespace-nowrap rounded-full transition-colors"
+                          >
+                            View →
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
