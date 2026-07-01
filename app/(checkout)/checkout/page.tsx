@@ -101,8 +101,6 @@ export default function CheckoutPage() {
     }
 
     const res = await createOrder(payload)
-
-    // Handle structured error returned from API
     if (res?.error) {
       toast.error(res.error)
       return
@@ -119,7 +117,6 @@ export default function CheckoutPage() {
       return
     }
 
-    // ... rest of your success logic (unchanged)
     const orderData = {
       orderNumber,
       customerName: payload.customerName,
@@ -227,7 +224,7 @@ console.log( "orderdata",orderData.deliveryFee)
                       placeholder="Your name"
                       value={form.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 text-base shadow-none text-sm placeholder:text-gray-400 ${errors.firstName ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 text-base shadow-none placeholder:text-gray-400 ${errors.firstName ? 'border-red-500' : ''}`}
                     />
                     {errors.firstName && (
                       <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>
@@ -298,9 +295,12 @@ console.log( "orderdata",orderData.deliveryFee)
                   placeholder="Your phone number for whatsapp order updates"
                   value={form.whatsappPhone}
                   onChange={(e) => handleInputChange('whatsappPhone', e.target.value)}
-                  className="h-11 rounded-md border-gray-300 shadow-none text-base placeholder:text-gray-400 pr-10"
+                  className={`h-11 rounded-md border-gray-300 shadow-none text-base placeholder:text-gray-400 pr-10 ${errors.whatsappPhone ? 'border-red-500' : ''} `}
                 />
-                <HelpCircle className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" />
+                <HelpCircle className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-[100%] cursor-pointer" />
+                 {errors.whatsappPhone && (
+                      <p className="text-xs text-red-500 mt-1">{errors.whatsappPhone}</p>
+                    )}
               </div>
 
               <div className="flex items-center space-x-2 py-1">
@@ -378,12 +378,12 @@ console.log( "orderdata",orderData.deliveryFee)
                 placeholder="Discount code or gift card"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-                className="h-10 rounded-md border-gray-300 bg-white shadow-none text-sm placeholder:text-gray-400 focus-visible:ring-1 text-base focus-visible:ring-gray-400"
+                className="h-10 rounded-md border-gray-300 bg-white shadow-none  placeholder:text-gray-400 focus-visible:ring-1 text-base focus-visible:ring-gray-400"
               />
               <Button
                 type="button"
                 onClick={() => discount && setDiscountApplied(true)}
-                className="h-10 px-4 bg-[#f5e6e6] hover:bg-[#ebd7d7] text-gray-700 text-xs font-medium rounded-md shadow-none transition"
+                className="h-10 px-4 bg-gray-300/70 hover:bg-[#ebd7d7] text-gray-700 text-xs font-medium rounded-md shadow-none transition"
               >
                 Apply
               </Button>

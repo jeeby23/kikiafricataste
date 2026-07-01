@@ -17,7 +17,7 @@ export default function OrderConfirmation() {
   const params = useParams()
   const router = useRouter()
   const orderId = params.id as string
-const penceToPounds = (pence: number) => (pence || 0) / 100
+  const penceToPounds = (pence: number) => (pence || 0) / 100
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -47,7 +47,7 @@ const penceToPounds = (pence: number) => (pence || 0) / 100
     )
   }
 
-const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
+  const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
   const deliveryFeePounds = penceToPounds(order.deliveryFee || 0)
   const displayTotal = subtotal + deliveryFeePounds
   return (
@@ -60,7 +60,9 @@ const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price
                 <CheckCircle className="w-10 h-10 text-green-600" />
                 <div>
                   <p className="text-green-600 font-medium">Confirmation #{orderId}</p>
-                  <h1 className="text-4xl font-bold text-black">Thank you, {order.firstName}!</h1>
+                  <h1 className="text-4xl font-bold text-black">
+                    Thank you, {order.customerName}!
+                  </h1>
                 </div>
               </div>
               <p className="text-lg text-gray-600">Your order is confirmed for pickup.</p>
@@ -103,13 +105,16 @@ const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price
                   <h4 className="font-medium mb-3">Bank Transfer Details</h4>
                   <div className="space-y-1.5 text-sm">
                     <p>
-                      <strong>Bank:</strong> Moniepoint
+                      <strong>Bank:</strong> Monzo Bank
+                    </p>
+                    <p>
+                      <strong>Account Number:</strong> 16084551
+                    </p>
+                    <p>
+                      <strong>Sort Code:</strong> 04-00-03
                     </p>
                     <p>
                       <strong>Account Name:</strong> KIKI AFRICAN TASTE LTD
-                    </p>
-                    <p>
-                      <strong>Account Number:</strong> 1234567890
                     </p>
                   </div>
                 </div>
@@ -176,7 +181,7 @@ const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price
                   <span className="text-gray-600">Delivery Fee</span>
 
                   <span>
-                   {deliveryFeePounds === 0 ? 'FREE' : `£${deliveryFeePounds.toFixed(2)}`}
+                    {deliveryFeePounds === 0 ? 'FREE' : `£${deliveryFeePounds.toFixed(2)}`}
                   </span>
                 </div>
               </div>
@@ -185,7 +190,7 @@ const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price
 
               <div className="flex justify-between items-baseline">
                 <span className="text-lg font-bold">Total</span>
-               <span className="text-2xl font-bold">£{displayTotal.toFixed(2)}</span>
+                <span className="text-2xl font-bold">£{displayTotal.toFixed(2)}</span>
               </div>
 
               <Link

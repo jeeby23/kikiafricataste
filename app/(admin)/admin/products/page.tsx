@@ -6,7 +6,7 @@ import { Plus, Pencil, Trash2, FilePenLine, MoreHorizontal } from 'lucide-react'
 import {
   useAdminProducts,
   useToggleProduct,
-  useDraftProduct,
+  // useDraftProduct,
   useDeleteProduct,
 } from '@/features/products/products.query'
 import Swal from 'sweetalert2'
@@ -46,13 +46,12 @@ function ActionsMenu({
   productId,
   productName,
   onDelete,
-  onDraft,
+ 
   onToggle,
 }: {
   productId: string
   productName: string
   onDelete: () => void
-  onDraft: () => void
   onToggle: () => void
 }) {
   return (
@@ -86,16 +85,16 @@ function ActionsMenu({
           <span className="w-3.5 h-3.5 flex items-center justify-center">
             <span className="w-2 h-2 rounded-full bg-amber-400" />
           </span>
-          Toggle Status
+          Inactive
         </DropdownMenuItem>
-
+{/* 
         <DropdownMenuItem
           onClick={onDraft}
           className="flex items-center gap-2.5 text-sm text-gray-500 hover:text-red-600 w-full text-left cursor-pointer"
         >
           <FilePenLine className="w-4 h-4" />
           Save as draft
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
 
         <DropdownMenuItem
           onClick={onDelete}
@@ -119,7 +118,7 @@ export default function ProductsPage() {
 
   const { data, isLoading, isError } = useAdminProducts(page, search)
   const toggleProduct = useToggleProduct()
-  const draftProduct = useDraftProduct()
+  // const draftProduct = useDraftProduct()
   const deleteProduct = useDeleteProduct()
 
   const products = data?.products ?? []
@@ -137,29 +136,29 @@ export default function ProductsPage() {
     return () => window.removeEventListener('admin:search', handler)
   }, [])
 
-  const handleDraft = async (id: string, name: string) => {
-    const result = await Swal.fire({
-      title: 'Save as Draft?',
-      text: `"${name}" will be unpublished and hidden from customers.`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Save as Draft',
-      cancelButtonText: 'Cancel',
-    })
-    if (!result.isConfirmed) return
-    setDeletingId(id)
-    draftProduct.mutate(id, {
-      onSuccess: () =>
-        Swal.fire({
-          title: 'Saved as Draft',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false,
-        }),
-      onError: () => Swal.fire({ title: 'Error', text: 'Failed to save draft.', icon: 'error' }),
-      onSettled: () => setDeletingId(null),
-    })
-  }
+  // const handleDraft = async (id: string, name: string) => {
+  //   const result = await Swal.fire({
+  //     title: 'Save as Draft?',
+  //     text: `"${name}" will be unpublished and hidden from customers.`,
+  //     icon: 'question',
+  //     showCancelButton: true,
+  //     confirmButtonText: 'Save as Draft',
+  //     cancelButtonText: 'Cancel',
+  //   })
+  //   if (!result.isConfirmed) return
+  //   setDeletingId(id)
+  //   draftProduct.mutate(id, {
+  //     onSuccess: () =>
+  //       Swal.fire({
+  //         title: 'Saved as Draft',
+  //         icon: 'success',
+  //         timer: 1500,
+  //         showConfirmButton: false,
+  //       }),
+  //     onError: () => Swal.fire({ title: 'Error', text: 'Failed to save draft.', icon: 'error' }),
+  //     onSettled: () => setDeletingId(null),
+  //   })
+  // }
 
   const handleDelete = async (id: string, name: string) => {
     const result = await Swal.fire({
@@ -267,6 +266,10 @@ export default function ProductsPage() {
               const isDeleting = deletingId === product.id
               const shortId = `P-${1000 + idx + (page - 1) * limit}`
 
+              function handleDraft(id: string, name: string): void {
+                throw new Error('Function not implemented.')
+              }
+
               return (
                 <div
                   key={product.id}
@@ -300,7 +303,6 @@ export default function ProductsPage() {
                         <ActionsMenu
                           productId={product.id}
                           productName={product.name}
-                          onDraft={() => handleDraft(product.id, product.name)}
                           onDelete={() => handleDelete(product.id, product.name)}
                           onToggle={() => toggleProduct.mutate(product.id)}
                         />
@@ -433,7 +435,7 @@ export default function ProductsPage() {
                         <ActionsMenu
                           productId={product.id}
                           productName={product.name}
-                          onDraft={() => handleDraft(product.id, product.name)}
+                          
                           onDelete={() => handleDelete(product.id, product.name)}
                           onToggle={() => toggleProduct.mutate(product.id)}
                         />
