@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle, XCircle, MapPin } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, MapPin, Store } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -54,9 +54,17 @@ export default function OrderDetailPage() {
   const isConfirmed = order.status === 'CONFIRMED'
   const isCancelled = order.status === 'CANCELLED'
 
-  // All monetary values from DB are in pence
+  // 1. Detect if this is a Store Pickup order safely
+  const isPickup = 
+    order.deliveryPostCode === 'PICKUP' || 
+    order.deliveryAddress?.toLowerCase().includes('pickup') || 
+    order.deliveryAddress?.toLowerCase().includes('store pickup')
+
+  // 2. Compute monetary values based on fulfillment method
   const subtotalPounds = toPounds(order.subtotal)
-  const deliveryPounds = toPounds(order.deliveryFee)
+  
+  // Force delivery fee to 0 if pickup, otherwise fallback to database value
+  const deliveryPounds = isPickup ? 0 : toPounds(order.deliveryFee)
   const trueTotal = subtotalPounds + deliveryPounds
 
   return (
@@ -145,7 +153,6 @@ export default function OrderDetailPage() {
                           : `${item.quantity} × £${item.unitPrice}`}
                       </p>
                     </div>
-                    {/* item.subtotal is in pence → convert to pounds */}
                     <div className="text-right font-medium">
                       {fmtPounds(toPounds(item.subtotal))}
                     </div>
@@ -180,19 +187,40 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
+            {/* Dynamic Fulfillment / Delivery Box */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5" /> Delivery Details
+                {isPickup ? (
+                  <>
+                    <Store className="w-5 h-5 text-amber-600" /> Fulfillment Method
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-5 h-5" /> Delivery Details
+                  </>
+                )}
               </h2>
               <div className="text-sm space-y-2">
-                <p>{order.deliveryAddress}</p>
-                <p>
-                  {order.deliveryCity}, {order.deliveryState}
-                </p>
+                {isPickup ? (
+                  <div>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 mb-2">
+                      Store Pickup Order
+                    </span>
+                    <p className="font-medium text-gray-900">Customer will collect from store.</p>
+                  </div>
+                ) : (
+                  <>
+                    <p>{order.deliveryAddress}</p>
+                    <p>
+                      {order.deliveryCity}{order.deliveryState ? `, ${order.deliveryState}` : ''}
+                    </p>
+                  </>
+                )}
                 {order.notes && <p className="text-amber-600 italic mt-3">Note: {order.notes}</p>}
               </div>
             </div>
 
+            {/* Order Summary */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
               <div className="space-y-3 text-sm">
@@ -202,7 +230,9 @@ export default function OrderDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Delivery Fee</span>
-                  <span>{order.deliveryFee === 0 ? 'Free' : fmtPence(order.deliveryFee)}</span>
+                  <span className={isPickup ? "text-green-600 font-semibold" : ""}>
+                    {isPickup ? 'Free (Pickup)' : fmtPounds(deliveryPounds)}
+                  </span>
                 </div>
                 <div className="border-t pt-3 flex justify-between font-semibold text-lg">
                   <span>Total</span>
