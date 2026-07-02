@@ -91,7 +91,7 @@ export default function CartSheet({ open, onClose }: { open: boolean; onClose: (
 
                     <button
                       onClick={() => removeItem(item.id)}
-                      className="text-gray-300 hover:text-red-500 transition ml-auto"
+                      className="text-gray-300 hover:text-red-500 transition ml-auto z-50"
                       aria-label="Remove item"
                     >
                       <Trash2 size={16} />

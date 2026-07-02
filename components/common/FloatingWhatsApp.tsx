@@ -23,7 +23,6 @@ export default function FloatingWhatsApp() {
 
   return (
     <>
-      {/* Chat Box */}
       {open && (
         <div className="fixed bottom-24 right-6 z-50 w-80 overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200 animate-in slide-in-from-bottom-4 duration-300 text-gray-700">
 
@@ -32,7 +31,7 @@ export default function FloatingWhatsApp() {
             <div>
               <h3 className="font-semibold">Kiki African Taste</h3>
               <p className="text-xs opacity-90">
-                Typically replies within a few minutes
+                Typically replies within a few minutes, <br />Click start button to chat with an agent
               </p>
             </div>
 
