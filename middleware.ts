@@ -7,7 +7,7 @@ const PUBLIC_ADMIN_ROUTES = [
   "/admin/reset-password",
   "/api/admin/login",
   "/api/admin/forgot-password",
-  "/api/admin/reset-password",
+  
 ];
 
 export async function middleware(req: NextRequest) {
