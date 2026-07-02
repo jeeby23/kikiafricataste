@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -18,14 +19,18 @@ import { Truck, Package } from 'lucide-react'
 import { createOrder } from '@/features/orders/orders.api'
 import { toast } from 'sonner'
 import { calculateDeliveryFee } from '@/lib/format'
+import { checkoutSchema, CheckoutFormValues } from '@/schema/checkout.schema'
+
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { items: cartItems, clearCart } = useCartStore()
+
   const [deliveryMethod, setDeliveryMethod] = useState<'ship' | 'pickup'>('ship')
   const [discount, setDiscount] = useState('')
   const [discountApplied, setDiscountApplied] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -38,46 +43,51 @@ export default function CheckoutPage() {
     state: 'Greater London',
     saveInfo: false,
   })
-  const [errors, setErrors] = useState<Partial<typeof form>>({})
+
+  const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormValues, string>>>({})
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0)
+
   const totalWeightKg = cartItems
     .filter((item) => item.pricingType === 'PER_KG')
     .reduce((sum, item) => sum + item.qty, 0)
 
   const deliveryFeePence = deliveryMethod === 'ship' ? calculateDeliveryFee(totalWeightKg) : 0
   const deliveryFee = deliveryFeePence / 100
+
   const total = deliveryMethod === 'pickup' ? subtotal : subtotal + deliveryFee
 
   const handleInputChange = (key: keyof typeof form, value: string | boolean) => {
     setForm((p) => ({ ...p, [key]: value }))
-    if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }))
-  }
-
-  const validateForm = () => {
-    const newErrors: Partial<typeof form> = {}
-
-    // Base info required for both shipping & pickup
-    if (!form.firstName.trim()) newErrors.firstName = 'First name is required'
-    if (!form.lastName.trim()) newErrors.lastName = 'Last name is required'
-    if (!form.email.trim()) newErrors.email = 'Email is required'
-    if (!form.whatsappPhone.trim()) newErrors.whatsappPhone = 'WhatsApp number is required'
-    if (!form.recipientPhone.trim()) newErrors.recipientPhone = 'Recipient phone is required'
-
-    // Skip address constraints if user picked pickup
-    if (deliveryMethod === 'ship') {
-      if (!form.address.trim()) newErrors.address = 'Address is required'
-      if (!form.city.trim()) newErrors.city = 'City is required'
-      if (!form.postalCode.trim()) newErrors.postalCode = 'Postal code is required'
+    // Clear the error for this field as user types
+    if (errors[key as keyof CheckoutFormValues]) {
+      setErrors((p) => ({ ...p, [key]: '' }))
     }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
   }
+
+  const validateForm = (): boolean => {
+  const result = checkoutSchema.safeParse({ ...form, deliveryMethod })
+
+  if (!result.success) {
+    const fieldErrors: Partial<Record<keyof CheckoutFormValues, string>> = {}
+    result.error.issues.forEach((issue) => {       // ← .issues not .errors
+      const field = issue.path[0] as keyof CheckoutFormValues
+      if (field && !fieldErrors[field]) {
+        fieldErrors[field] = issue.message
+      }
+    })
+    setErrors(fieldErrors)
+    return false
+  }
+
+  setErrors({})
+  return true
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
+
     setIsSubmitting(true)
 
     try {
@@ -103,6 +113,7 @@ export default function CheckoutPage() {
         toast.error(res.error)
         return
       }
+
       if (res?.data?.error) {
         toast.error(res.data.error)
         return
@@ -116,6 +127,7 @@ export default function CheckoutPage() {
 
       const orderData = {
         orderNumber,
+        firstName: form.firstName,
         customerName: payload.customerName,
         customerEmail: payload.customerEmail,
         customerWhatsapp: payload.customerWhatsapp,
@@ -130,19 +142,20 @@ export default function CheckoutPage() {
         expiresAt: res.data.expiresAt,
       }
 
-      console.log("orderdata", orderData.deliveryFee)
       localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderData))
       clearCart()
       toast.success('Order placed successfully! 🎉')
       router.push(`/checkout/${orderNumber}`)
     } catch (error: any) {
       console.error('Checkout Error:', error)
+
       const errorMessage =
         error?.response?.data?.error ||
         error?.response?.data?.message ||
         error?.response?.data?.detail ||
         error?.message ||
         'Failed to place order. Please try again.'
+
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
@@ -156,18 +169,35 @@ export default function CheckoutPage() {
       <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_42%] min-h-[calc(100vh-73px)]">
         <div className="p-6 md:p-12 lg:pr-16 bg-white space-y-8">
           <form onSubmit={handleSubmit} className="max-w-[620px] ml-auto w-full space-y-7">
+
             {/* Contact */}
             <div>
               <div className="flex justify-between items-center mb-3">
                 <h2 className="text-lg font-medium text-gray-900">Contact</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Input
+                  type="text"
+                  placeholder="Mobile number of recipient"
+                  value={form.recipientPhone}
+                  onChange={(e) => handleInputChange('recipientPhone', e.target.value)}
+                  className={`h-11 rounded-md border-gray-300 shadow-none placeholder:text-gray-400 text-[16px] focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400 ${errors.recipientPhone ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
+                />
+                {errors.recipientPhone && (
+                  <p className="text-xs text-red-500 mt-1">{errors.recipientPhone}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Name + Email — always shown, needed for both ship and pickup */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Input
-                    placeholder="First name"
+                    placeholder="Your name"
                     value={form.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className={`h-11 rounded-md border-gray-300 text-base shadow-none placeholder:text-gray-400 ${errors.firstName ? 'border-red-500' : ''}`}
+                    className={`h-11 rounded-md border-gray-300 text-[16px] shadow-none placeholder:text-gray-400 ${errors.firstName ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                   />
                   {errors.firstName && (
                     <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>
@@ -178,39 +208,31 @@ export default function CheckoutPage() {
                     placeholder="Last name"
                     value={form.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className={`h-11 rounded-md border-gray-300 text-base shadow-none placeholder:text-gray-400 ${errors.lastName ? 'border-red-500' : ''}`}
+                    className={`h-11 rounded-md border-gray-300 text-[16px] shadow-none placeholder:text-gray-400 ${errors.lastName ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                   />
                   {errors.lastName && (
                     <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>
                   )}
                 </div>
               </div>
-              <div className="space-y-1 mt-3">
+
+              <div>
                 <Input
-                  type="text"
-                  placeholder="Mobile number of recipient"
-                  value={form.recipientPhone}
-                  onChange={(e) => handleInputChange('recipientPhone', e.target.value)}
-                  className={`h-11 rounded-md border-gray-300 shadow-none placeholder:text-gray-400 text-base focus-visible:ring-1 focus-visible:ring-gray-400 ${errors.recipientPhone ? 'border-red-500' : ''}`}
-                />
-                {errors.recipientPhone && (
-                  <p className="text-xs text-red-500 mt-1">{errors.recipientPhone}</p>
-                )}
-              </div>
-              <div className="space-y-1 mt-3">
-                <Input
+                  type="email"
                   placeholder="Email"
                   value={form.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`h-11 rounded-md text-base border-gray-300 shadow-none placeholder:text-gray-400 ${errors.email ? 'border-red-500' : ''}`}
+                  className={`h-11 rounded-md text-[16px] border-gray-300 shadow-none placeholder:text-gray-400 ${errors.email ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                 />
-                {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                )}
               </div>
             </div>
 
             {/* Delivery Tabs */}
             <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-3">Delivery Method</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-3">Delivery</h2>
               <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-lg">
                 <button
                   type="button"
@@ -223,7 +245,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setDeliveryMethod('pickup')}
-                  className={`flex items-center justify-center gap-2 py-2 text-base font-medium rounded-md transition ${deliveryMethod === 'pickup' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-black'}`}
+                  className={`flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition ${deliveryMethod === 'pickup' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-black'}`}
                 >
                   <Package className="w-5 h-5" />
                   Pickup
@@ -231,13 +253,13 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Address fields (Hidden when Pickup selected) */}
+            {/* Address fields — ship only */}
             {deliveryMethod === 'ship' && (
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500 font-normal">Country/Region</label>
                   <Select defaultValue="GBP">
-                    <SelectTrigger className="w-full h-11 border-gray-300 rounded-md text-sm text-gray-700">
+                    <SelectTrigger className="w-full h-11 border-gray-300 rounded-md focus:ring-0 focus:ring-offset-0 text-[16px] text-gray-700">
                       <SelectValue placeholder="United Kingdom" />
                     </SelectTrigger>
                     <SelectContent>
@@ -245,31 +267,37 @@ export default function CheckoutPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div>
                   <Input
                     placeholder="Address you are sending package to"
                     value={form.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
-                    className={`h-11 rounded-md text-base border-gray-300 shadow-none placeholder:text-gray-400 ${errors.address ? 'border-red-500' : ''}`}
+                    className={`h-11 rounded-md text-[16px] border-gray-300 shadow-none placeholder:text-gray-400 ${errors.address ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                   />
-                  {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+                  {errors.address && (
+                    <p className="text-xs text-red-500 mt-1">{errors.address}</p>
+                  )}
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Input
                       placeholder="City"
                       value={form.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-base placeholder:text-gray-400 ${errors.city ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 shadow-none text-[16px] placeholder:text-gray-400 ${errors.city ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                     />
-                    {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
+                    {errors.city && (
+                      <p className="text-xs text-red-500 mt-1">{errors.city}</p>
+                    )}
                   </div>
                   <div>
                     <Input
                       placeholder="Postal code"
                       value={form.postalCode}
                       onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 text-base shadow-none placeholder:text-gray-400 ${errors.postalCode ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 text-[16px] shadow-none placeholder:text-gray-400 ${errors.postalCode ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                     />
                     {errors.postalCode && (
                       <p className="text-xs text-red-500 mt-1">{errors.postalCode}</p>
@@ -286,13 +314,14 @@ export default function CheckoutPage() {
                   placeholder="Your phone number for whatsapp order updates"
                   value={form.whatsappPhone}
                   onChange={(e) => handleInputChange('whatsappPhone', e.target.value)}
-                  className={`h-11 rounded-md border-gray-300 shadow-none text-base placeholder:text-gray-400 pr-10 ${errors.whatsappPhone ? 'border-red-500' : ''} `}
+                  className={`h-11 rounded-md border-gray-300 shadow-none text-[16px] placeholder:text-gray-400 pr-10 ${errors.whatsappPhone ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                 />
                 <HelpCircle className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" />
                 {errors.whatsappPhone && (
                   <p className="text-xs text-red-500 mt-1">{errors.whatsappPhone}</p>
                 )}
               </div>
+
               <div className="flex items-center space-x-2 py-1">
                 <Checkbox
                   id="saveInfo"
@@ -324,8 +353,19 @@ export default function CheckoutPage() {
                     fill="none"
                     viewBox="0 0 24 24"
                   >
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
                   </svg>
                   Processing Order...
                 </div>
@@ -336,9 +376,10 @@ export default function CheckoutPage() {
           </form>
         </div>
 
-        {/* Cart Review Sidebar */}
+        {/* Order Summary */}
         <div className="bg-gray-200/70 p-6 md:p-12 lg:pl-12 border-l border-gray-100">
           <div className="max-w-[440px] mr-auto w-full space-y-6">
+
             <div className="space-y-4">
               {displayItems.map((item) => (
                 <div key={item.id} className="flex items-center justify-between gap-4">
@@ -367,7 +408,7 @@ export default function CheckoutPage() {
                 placeholder="Discount code or gift card"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-                className="h-10 rounded-md border-gray-300 bg-white shadow-none placeholder:text-gray-400 text-base"
+                className="h-10 rounded-md border-gray-300 bg-white shadow-none placeholder:text-gray-400 focus-visible:ring-1 text-[16px] focus-visible:ring-gray-400"
               />
               <Button
                 type="button"
@@ -405,6 +446,7 @@ export default function CheckoutPage() {
                 </p>
               )}
             </div>
+
             <div className="border-t border-gray-200/60 pt-4 flex justify-between items-baseline">
               <span className="text-base font-semibold text-gray-900">Total</span>
               <div className="flex items-baseline gap-1.5">

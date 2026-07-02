@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 
-const PUBLIC_ADMIN_ROUTES = ["/admin/login", "/api/admin/login"];
+const PUBLIC_ADMIN_ROUTES = [
+  "/admin/login",
+  "/admin/forgot-password",
+  "/admin/reset-password",
+  "/api/admin/login",
+  "/api/admin/forgot-password",
+  "/api/admin/reset-password",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -15,7 +22,7 @@ export async function middleware(req: NextRequest) {
   if (isPublic) return NextResponse.next();
 
   const token = req.cookies.get("admin_token")?.value;
-  console.log("Token:", token);
+  // console.log("Token:", token);
   const admin = token ? await verifyToken(token) : null;
 
   if (!admin) {

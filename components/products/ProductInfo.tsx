@@ -31,7 +31,6 @@ export default function ProductInfo({
   const isGoatMeat = product.name.toLowerCase().includes('goat meat')
   const presets = [2, 5, 10, 20]
 
-  // Only show minimum text for products that actually have a minimum > 1
   const showMinQty = minQty > 1
 
   return (
@@ -57,7 +56,6 @@ export default function ProductInfo({
         )}
       </div>
 
-      {/* Minimum Order Text - Only show for special products */}
       {showMinQty && (
         <p className="text-sm text-gray-500 font-medium">
           Minimum order: <strong>{minQty} pieces</strong>
@@ -129,7 +127,6 @@ export default function ProductInfo({
         </div>
       </div>
 
-      {/* Stock status */}
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-red-400'}`} />
         <span className={`text-sm font-medium ${inStock ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -137,7 +134,6 @@ export default function ProductInfo({
         </span>
       </div>
 
-      {/* Add to cart button */}
       <button
         onClick={handleAddToCart}
         disabled={!inStock || added}
@@ -163,7 +159,7 @@ export default function ProductInfo({
       </button>
 
       <p className="text-[11px] text-gray-400 text-center">
-        🚚 Free delivery on orders over £10 · Secure checkout
+        🚚 Free delivery on orders over £70 · Secure checkout
       </p>
     </div>
   )

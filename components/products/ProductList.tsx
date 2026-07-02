@@ -55,7 +55,8 @@ const ProductList = () => {
               const primaryImage =
                 product.images?.find((img) => img.isPrimary)?.url || '/placeholder.png'
 
-              const price = product.pricingType === 'PER_KG' ? product.pricePerKg : product.price
+              const rawPrice = product.pricingType === 'PER_KG' ? product.pricePerKg : product.price
+              const price = rawPrice ? rawPrice / 100 : null
 
               const priceLabel = product.pricingType === 'PER_KG' ? '/kg' : ''
 
@@ -68,7 +69,6 @@ const ProductList = () => {
                         alt={product.name}
                         fill
                         sizes="(max-width: 640px) 50vw,(max-width: 768px) 50vw,(max-width: 1024px) 33vw,25vw"
-             
                         className="object-cover transition-transform duration-700 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-xl" />

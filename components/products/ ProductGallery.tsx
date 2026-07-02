@@ -31,8 +31,6 @@ export default function ProductGallery({
 
   return (
     <div className="flex flex-col gap-4">
-
-      {/* Main image */}
       <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gray-50 group">
         <Image
           src={activeUrl}
@@ -43,7 +41,6 @@ export default function ProductGallery({
           className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
         />
 
-        {/* Prev / Next arrows — only if multiple images */}
         {images.length > 1 && (
           <>
             <button

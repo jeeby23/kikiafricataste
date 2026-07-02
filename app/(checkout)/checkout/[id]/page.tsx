@@ -45,18 +45,13 @@ export default function OrderConfirmation() {
       </div>
     )
   }
-
-  // 1. Detect delivery method
+  
   const isPickup = order.deliveryPostCode === 'PICKUP' || order.deliveryAddress === 'Store Pickup'
 
-  // 2. Base math subtotal calculation
   const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
-  
-  // 3. FORCE delivery fee to 0 if it's a pickup order
+
   const rawFee = order.deliveryFee || 0
   const deliveryFeePounds = isPickup ? 0 : (rawFee > 100 ? penceToPounds(rawFee) : rawFee)
-  
-  // 4. Strict total resolution
   const displayTotal = isPickup ? subtotal : subtotal + deliveryFeePounds
 
   return (

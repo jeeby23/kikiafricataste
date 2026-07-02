@@ -17,7 +17,6 @@ export default function CartPage() {
 
   const deliveryFeePence = calculateDeliveryFee(totalWeightKg)
   const deliveryFee = deliveryFeePence / 100
-
   const total = subtotal + deliveryFee
 
   if (items.length === 0) {

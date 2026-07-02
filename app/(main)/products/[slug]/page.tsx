@@ -39,7 +39,6 @@ export default function Page() {
     ? (product.stockKg ?? 0) > 0 
     : (product.stockQty ?? 0) > 0
 
-  // === NEW: Minimum Order Logic ===
   const getMinimumQty = (): number => {
     const nameLower = product.name.toLowerCase()
     const categoryName = product.category?.name?.toLowerCase() || ''
@@ -98,17 +97,15 @@ export default function Page() {
               inStock={inStock}
               handleAddToCart={handleAddToCart}
               added={added}
-              minQty={minQty}   // ← Pass minimum to ProductInfo if needed
+              minQty={minQty}   
             />
           </div>
         </div>
       </section>
 
-      {/* Description + How to use section - unchanged */}
       <section className="border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
-            {/* Description */}
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-widest text-[#c9a96e] mb-4">
                 About this product
@@ -194,7 +191,7 @@ export default function Page() {
       </section>
 
       <section className="border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-10">
           <RelatedProducts slug={product.slug} limit={4} />
         </div>
       </section>

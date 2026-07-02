@@ -33,14 +33,12 @@ export default function RootLayout({
       <body className="min-h-screen font-barlow">
         <Providers>
           {children}
-          <FloatingWhatsApp />
-
-          {/* Sonner Toaster - Add it here */}
+          {/* <FloatingWhatsApp /> */}
           <Toaster 
             position="top-center" 
             richColors 
             closeButton 
-            theme="system"   // This works well with next-themes
+            theme="system" 
           />
         </Providers>
       </body>
