@@ -297,7 +297,7 @@ export async function sendOrderCancelled(order: {
 // ─── Forgot password — Resend only ────────────────────────────
 
 export async function sendPasswordResetEmail(email: string, token: string) {
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/reset-password?token=${token}`;
+  const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/admin/reset-password?token=${token}`;
 
   await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL!,

@@ -7,6 +7,7 @@ const PUBLIC_ADMIN_ROUTES = [
   "/admin/reset-password",
   "/api/admin/login",
   "/api/admin/forgot-password",
+   "/api/admin/reset-password"
   
 ];
 
@@ -22,7 +23,7 @@ export async function middleware(req: NextRequest) {
   if (isPublic) return NextResponse.next();
 
   const token = req.cookies.get("admin_token")?.value;
-  // console.log("Token:", token);
+  console.log("Token:", token);
   const admin = token ? await verifyToken(token) : null;
 
   if (!admin) {
