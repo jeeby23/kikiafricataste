@@ -14,6 +14,7 @@ interface ProductInfoProps {
   added: boolean
   minQty: number
   allowedWeights?: number[] | null
+  stepSize?: number
 }
 
 export default function ProductInfo({
@@ -27,13 +28,12 @@ export default function ProductInfo({
   added,
   minQty,
   allowedWeights,
+  stepSize = 1,
 }: ProductInfoProps) {
   const lineTotal = `£${(price * qty).toFixed(2)}`
-
-  // Use allowedWeights prop from parent (set by product page logic)
-  // Falls back to name check so existing behaviour is preserved if prop not passed
   const hasAllowedWeights = allowedWeights && allowedWeights.length > 0
-  const showMinQty = minQty > 1 && !hasAllowedWeights
+  const isStepProduct = !hasAllowedWeights && stepSize > 1
+  const showMinQty = minQty > 1 && !hasAllowedWeights && !isStepProduct
 
   return (
     <div className="space-y-7">
@@ -49,7 +49,7 @@ export default function ProductInfo({
 
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold text-gray-900">
-          {hasAllowedWeights
+          {hasAllowedWeights || isStepProduct
             ? `£${(price * qty).toFixed(2)}`
             : formattedPrice}
         </span>
@@ -68,6 +68,13 @@ export default function ProductInfo({
         </p>
       )}
 
+      {isStepProduct && (
+        <p className="text-sm text-gray-500 font-medium">
+          Ordered in multiples of <strong>{stepSize}</strong>
+          {product.pricingType !== 'PER_KG' ? ' pieces' : 'kg'}
+        </p>
+      )}
+
       {product.description && (
         <p className="text-gray-500 text-[14.5px] leading-relaxed line-clamp-3">
           {product.description}
@@ -76,7 +83,7 @@ export default function ProductInfo({
 
       <div className="border-t border-gray-100" />
 
-      {/* Preset weight selector — shown only when allowedWeights is set (e.g. goat meat) */}
+      {/* Goat meat: chip selector */}
       {hasAllowedWeights && (
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
@@ -104,7 +111,7 @@ export default function ProductInfo({
         </div>
       )}
 
-      {/* +/- qty stepper — hidden for products with preset weights */}
+      {/* Step-based and regular products: +/- stepper */}
       {!hasAllowedWeights && (
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
@@ -113,8 +120,9 @@ export default function ProductInfo({
 
           <div className="flex items-center gap-0">
             <button
-              onClick={() => setQty((q) => Math.max(minQty, q - 1))}
-              className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-l-xl text-gray-600 hover:bg-gray-50 transition-colors"
+              onClick={() => setQty((q) => Math.max(minQty, q - stepSize))}
+              disabled={qty <= minQty}
+              className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-l-xl text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Decrease"
             >
               <Minus className="w-4 h-4" />
@@ -123,14 +131,14 @@ export default function ProductInfo({
               {qty}
             </div>
             <button
-              onClick={() => setQty((q) => q + 1)}
+              onClick={() => setQty((q) => q + stepSize)}
               className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-r-xl text-gray-600 hover:bg-gray-50 transition-colors"
               aria-label="Increase"
             >
               <Plus className="w-4 h-4" />
             </button>
 
-            {qty > 1 && (
+            {qty > minQty && (
               <span className="ml-4 text-sm text-gray-400">
                 Total:{' '}
                 <span className="font-semibold text-gray-700">{lineTotal}</span>
