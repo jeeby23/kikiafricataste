@@ -32,7 +32,6 @@ export default function Page() {
   const images = product.images || []
   const isPerKg = product.pricingType === 'PER_KG'
 
-  // === Price in pounds ===
   const priceInPence = isPerKg ? (product.pricePerKg ?? 0) : (product.price ?? 0)
   const priceInPounds = priceInPence / 100
 
@@ -42,6 +41,7 @@ export default function Page() {
 
   const inStock = isPerKg ? (product.stockKg ?? 0) > 0 : (product.stockQty ?? 0) > 0
 
+  // Goat meat: specific non-uniform weights via chip selection
   const GOAT_MEAT_ALLOWED_WEIGHTS = [2, 5, 10, 20]
 
   const isGoatMeat = (): boolean => {
@@ -56,11 +56,11 @@ export default function Page() {
 
   const allowedWeights = getAllowedWeights()
 
-  const getMinimumQty = (): number => {
-    if (allowedWeights) return allowedWeights[0]
+  // Step-based products: +/- jumps by this amount, qty must be a multiple
+  const getStepSize = (): number => {
+    if (allowedWeights) return 1 // goat meat uses chips, step irrelevant
     const nameLower = product.name.toLowerCase()
     const categoryName = product.category?.name?.toLowerCase() || ''
-
     if (categoryName.includes('ponmo') || nameLower.includes('ponmo')) return 10
     if (nameLower.includes('smoked abo') || nameLower.includes('abo fish')) return 6
     if (nameLower.includes('smoked catfish') || nameLower.includes('catfish')) return 4
@@ -68,35 +68,42 @@ export default function Page() {
     return 1
   }
 
-  const minQty = getMinimumQty()
+  const stepSize = getStepSize()
+  const minQty = allowedWeights ? allowedWeights[0] : stepSize
 
   const handleAddToCart = () => {
+    // Goat meat: must be one of the allowed weights
     if (allowedWeights && !allowedWeights.includes(qty)) {
-      toast.error(`Please select an allowed weight for ${product.name}`, {
-        description: `Available options: ${allowedWeights.join('kg, ')}kg`,
+      toast.error(`Please select a weight for ${product.name}`, {
+        description: `Available: ${allowedWeights.join('kg, ')}kg`,
       })
       return
     }
 
-    if (!allowedWeights && qty < minQty) {
+    // Step products: qty must be a non-zero multiple of stepSize
+    if (!allowedWeights && stepSize > 1) {
+      if (qty < minQty || qty % stepSize !== 0) {
+        toast.error(`${product.name} must be ordered in multiples of ${stepSize}`, {
+          description: `e.g. ${stepSize}, ${stepSize * 2}, ${stepSize * 3}...`,
+        })
+        return
+      }
+    }
+
+    // Regular products: respect minimum
+    if (!allowedWeights && stepSize === 1 && qty < minQty) {
       toast.error(`Minimum order for this item is ${minQty} pieces`, {
         description: `You selected ${qty} — please increase quantity.`,
       })
       return
     }
-    // if (qty < minQty) {
-    //   toast.error(`Minimum order for this item is ${minQty} pieces`, {
-    //     description: `You selected ${qty} — please increase quantity.`,
-    //   })
-    //   return
-    // }
 
     addItem({
       id: product.id,
       name: product.name,
       image: images[0]?.url || '/placeholder.png',
       price: priceInPounds,
-      qty: qty,
+      qty,
       pricingType: product.pricingType || 'FIXED',
       totalPrice: priceInPounds * qty,
       detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
@@ -135,6 +142,7 @@ export default function Page() {
               added={added}
               minQty={minQty}
               allowedWeights={allowedWeights}
+              stepSize={stepSize}
             />
           </div>
         </div>
@@ -157,37 +165,25 @@ export default function Page() {
               <div className="mt-8 grid grid-cols-2 gap-4">
                 {product.category && (
                   <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
-                      Category
-                    </p>
-                    <p className="text-sm font-medium text-gray-800 capitalize">
-                      {product.category.name}
-                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Category</p>
+                    <p className="text-sm font-medium text-gray-800 capitalize">{product.category.name}</p>
                   </div>
                 )}
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
-                    Pricing
-                  </p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Pricing</p>
                   <p className="text-sm font-medium text-gray-800">
                     {product.pricingType === 'PER_KG' ? 'Sold by weight (kg)' : 'Fixed price'}
                   </p>
                 </div>
                 {product.pricingType === 'PER_KG' && product.minWeightKg ? (
                   <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
-                      Min. order
-                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Min. order</p>
                     <p className="text-sm font-medium text-gray-800">{product.minWeightKg} kg</p>
                   </div>
                 ) : null}
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
-                    Availability
-                  </p>
-                  <p
-                    className={`text-sm font-medium ${inStock ? 'text-emerald-600' : 'text-red-500'}`}
-                  >
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Availability</p>
+                  <p className={`text-sm font-medium ${inStock ? 'text-emerald-600' : 'text-red-500'}`}>
                     {inStock ? 'In stock' : 'Out of stock'}
                   </p>
                 </div>
@@ -201,34 +197,15 @@ export default function Page() {
               <h3 className="text-2xl font-semibold text-gray-900 mb-4 leading-snug">
                 Serving &amp; preparation
               </h3>
-
               <ol className="space-y-5">
                 {[
-                  {
-                    step: '01',
-                    title: 'Store correctly',
-                    body: 'Keep refrigerated or frozen immediately on arrival. Use fresh portions within 2–3 days; freeze the rest for up to 3 months.',
-                  },
-                  {
-                    step: '02',
-                    title: 'Prepare your ingredients',
-                    body: 'Rinse under cold water if desired. Season generously with your favourite African spices — iru (locust bean), uziza, or crayfish all pair beautifully.',
-                  },
-                  {
-                    step: '03',
-                    title: 'Cook with confidence',
-                    body: 'Works perfectly in soups, stews, pepper soups, and grills. Simmer low and slow for depth of flavour, or grill over high heat for a charred finish.',
-                  },
-                  {
-                    step: '04',
-                    title: 'Serve & enjoy',
-                    body: 'Pair with eba, pounded yam, jollof rice, or fufu. Best enjoyed fresh and shared.',
-                  },
+                  { step: '01', title: 'Store correctly', body: 'Keep refrigerated or frozen immediately on arrival. Use fresh portions within 2–3 days; freeze the rest for up to 3 months.' },
+                  { step: '02', title: 'Prepare your ingredients', body: 'Rinse under cold water if desired. Season generously with your favourite African spices — iru (locust bean), uziza, or crayfish all pair beautifully.' },
+                  { step: '03', title: 'Cook with confidence', body: 'Works perfectly in soups, stews, pepper soups, and grills. Simmer low and slow for depth of flavour, or grill over high heat for a charred finish.' },
+                  { step: '04', title: 'Serve & enjoy', body: 'Pair with eba, pounded yam, jollof rice, or fufu. Best enjoyed fresh and shared.' },
                 ].map(({ step, title, body }) => (
                   <li key={step} className="flex gap-4">
-                    <span className="text-[11px] font-bold text-[#c9a96e] mt-0.5 shrink-0 w-6">
-                      {step}
-                    </span>
+                    <span className="text-[11px] font-bold text-[#c9a96e] mt-0.5 shrink-0 w-6">{step}</span>
                     <div>
                       <p className="text-sm font-semibold text-gray-900 mb-1">{title}</p>
                       <p className="text-[14px] text-gray-500 leading-relaxed">{body}</p>
