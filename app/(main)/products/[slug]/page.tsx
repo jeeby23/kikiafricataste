@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useProduct } from '@/features/products/products.query'
 import { useCartStore } from '@/store/cartStore'
 import ProductSkeleton from '@/components/products/ProductSkeleton'
-import ProductGallery from "@/components/products/ ProductGallery"
+import ProductGallery from '@/components/products/ ProductGallery'
 import ProductInfo from '@/components/products/ProductInfo'
 import RelatedProducts from '@/components/products/RelatedProducts'
 import { toast } from 'sonner'
@@ -22,7 +22,12 @@ export default function Page() {
   const [added, setAdded] = useState(false)
 
   if (isLoading) return <ProductSkeleton />
-  if (!product) return <div className="min-h-screen flex items-center justify-center text-gray-400">Product not found</div>
+  if (!product)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        Product not found
+      </div>
+    )
 
   const images = product.images || []
   const isPerKg = product.pricingType === 'PER_KG'
@@ -31,15 +36,28 @@ export default function Page() {
   const priceInPence = isPerKg ? (product.pricePerKg ?? 0) : (product.price ?? 0)
   const priceInPounds = priceInPence / 100
 
-  const formattedPrice = isPerKg 
-    ? `£${priceInPounds.toFixed(2)}/kg` 
+  const formattedPrice = isPerKg
+    ? `£${priceInPounds.toFixed(2)}/kg`
     : `£${priceInPounds.toFixed(2)}`
 
-  const inStock = isPerKg 
-    ? (product.stockKg ?? 0) > 0 
-    : (product.stockQty ?? 0) > 0
+  const inStock = isPerKg ? (product.stockKg ?? 0) > 0 : (product.stockQty ?? 0) > 0
+
+  const GOAT_MEAT_ALLOWED_WEIGHTS = [2, 5, 10, 20]
+
+  const isGoatMeat = (): boolean => {
+    const nameLower = product.name.toLowerCase()
+    return nameLower.includes('goat meat') || nameLower.includes('goat')
+  }
+
+  const getAllowedWeights = (): number[] | null => {
+    if (isGoatMeat() && isPerKg) return GOAT_MEAT_ALLOWED_WEIGHTS
+    return null
+  }
+
+  const allowedWeights = getAllowedWeights()
 
   const getMinimumQty = (): number => {
+    if (allowedWeights) return allowedWeights[0]
     const nameLower = product.name.toLowerCase()
     const categoryName = product.category?.name?.toLowerCase() || ''
 
@@ -47,26 +65,39 @@ export default function Page() {
     if (nameLower.includes('smoked abo') || nameLower.includes('abo fish')) return 6
     if (nameLower.includes('smoked catfish') || nameLower.includes('catfish')) return 4
     if (nameLower.includes('eja kika') || nameLower.includes('smoked eja')) return 16
-    return 1 
+    return 1
   }
 
   const minQty = getMinimumQty()
 
   const handleAddToCart = () => {
-    if (qty < minQty) {
+    if (allowedWeights && !allowedWeights.includes(qty)) {
+      toast.error(`Please select an allowed weight for ${product.name}`, {
+        description: `Available options: ${allowedWeights.join('kg, ')}kg`,
+      })
+      return
+    }
+
+    if (!allowedWeights && qty < minQty) {
       toast.error(`Minimum order for this item is ${minQty} pieces`, {
         description: `You selected ${qty} — please increase quantity.`,
       })
       return
     }
+    // if (qty < minQty) {
+    //   toast.error(`Minimum order for this item is ${minQty} pieces`, {
+    //     description: `You selected ${qty} — please increase quantity.`,
+    //   })
+    //   return
+    // }
 
     addItem({
       id: product.id,
       name: product.name,
       image: images[0]?.url || '/placeholder.png',
       price: priceInPounds,
-      qty: qty,                   
-      pricingType: product.pricingType || 'FIXED',   
+      qty: qty,
+      pricingType: product.pricingType || 'FIXED',
       totalPrice: priceInPounds * qty,
       detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
     })
@@ -84,7 +115,12 @@ export default function Page() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
           <div className="md:col-span-7 lg:col-span-6">
-            <ProductGallery images={images} activeImage={activeImage} setActiveImage={setActiveImage} productName={product.name} />
+            <ProductGallery
+              images={images}
+              activeImage={activeImage}
+              setActiveImage={setActiveImage}
+              productName={product.name}
+            />
           </div>
 
           <div className="md:col-span-5 lg:col-span-5 md:sticky md:top-24 self-start">
@@ -97,7 +133,8 @@ export default function Page() {
               inStock={inStock}
               handleAddToCart={handleAddToCart}
               added={added}
-              minQty={minQty}   
+              minQty={minQty}
+              allowedWeights={allowedWeights}
             />
           </div>
         </div>
@@ -120,25 +157,37 @@ export default function Page() {
               <div className="mt-8 grid grid-cols-2 gap-4">
                 {product.category && (
                   <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Category</p>
-                    <p className="text-sm font-medium text-gray-800 capitalize">{product.category.name}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+                      Category
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 capitalize">
+                      {product.category.name}
+                    </p>
                   </div>
                 )}
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Pricing</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+                    Pricing
+                  </p>
                   <p className="text-sm font-medium text-gray-800">
                     {product.pricingType === 'PER_KG' ? 'Sold by weight (kg)' : 'Fixed price'}
                   </p>
                 </div>
                 {product.pricingType === 'PER_KG' && product.minWeightKg ? (
                   <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Min. order</p>
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+                      Min. order
+                    </p>
                     <p className="text-sm font-medium text-gray-800">{product.minWeightKg} kg</p>
                   </div>
                 ) : null}
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Availability</p>
-                  <p className={`text-sm font-medium ${inStock ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+                    Availability
+                  </p>
+                  <p
+                    className={`text-sm font-medium ${inStock ? 'text-emerald-600' : 'text-red-500'}`}
+                  >
                     {inStock ? 'In stock' : 'Out of stock'}
                   </p>
                 </div>
@@ -177,7 +226,9 @@ export default function Page() {
                   },
                 ].map(({ step, title, body }) => (
                   <li key={step} className="flex gap-4">
-                    <span className="text-[11px] font-bold text-[#c9a96e] mt-0.5 shrink-0 w-6">{step}</span>
+                    <span className="text-[11px] font-bold text-[#c9a96e] mt-0.5 shrink-0 w-6">
+                      {step}
+                    </span>
                     <div>
                       <p className="text-sm font-semibold text-gray-900 mb-1">{title}</p>
                       <p className="text-[14px] text-gray-500 leading-relaxed">{body}</p>

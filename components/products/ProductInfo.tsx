@@ -13,6 +13,7 @@ interface ProductInfoProps {
   handleAddToCart: () => void
   added: boolean
   minQty: number
+  allowedWeights?: number[] | null
 }
 
 export default function ProductInfo({
@@ -25,13 +26,14 @@ export default function ProductInfo({
   handleAddToCart,
   added,
   minQty,
+  allowedWeights,
 }: ProductInfoProps) {
   const lineTotal = `£${(price * qty).toFixed(2)}`
 
-  const isGoatMeat = product.name.toLowerCase().includes('goat meat')
-  const presets = [2, 5, 10, 20]
-
-  const showMinQty = minQty > 1
+  // Use allowedWeights prop from parent (set by product page logic)
+  // Falls back to name check so existing behaviour is preserved if prop not passed
+  const hasAllowedWeights = allowedWeights && allowedWeights.length > 0
+  const showMinQty = minQty > 1 && !hasAllowedWeights
 
   return (
     <div className="space-y-7">
@@ -47,11 +49,15 @@ export default function ProductInfo({
 
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold text-gray-900">
-          {isGoatMeat ? `£${(price * qty).toFixed(2)}` : formattedPrice}
+          {hasAllowedWeights
+            ? `£${(price * qty).toFixed(2)}`
+            : formattedPrice}
         </span>
         {product.pricingType === 'PER_KG' && (
           <span className="text-sm text-gray-400">
-            {isGoatMeat ? `for ${qty}kg (£${price.toFixed(2)}/kg)` : 'per kilogram'}
+            {hasAllowedWeights
+              ? `for ${qty}kg (£${price.toFixed(2)}/kg)`
+              : 'per kilogram'}
           </span>
         )}
       </div>
@@ -70,13 +76,14 @@ export default function ProductInfo({
 
       <div className="border-t border-gray-100" />
 
-      {isGoatMeat && (
+      {/* Preset weight selector — shown only when allowedWeights is set (e.g. goat meat) */}
+      {hasAllowedWeights && (
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Select Weight Option
+            Select Weight
           </label>
           <div className="flex gap-2">
-            {presets.map((weight) => (
+            {allowedWeights!.map((weight) => (
               <button
                 key={weight}
                 type="button"
@@ -91,41 +98,47 @@ export default function ProductInfo({
               </button>
             ))}
           </div>
+          <p className="text-xs text-gray-400">
+            Only the above weights are available for this product.
+          </p>
         </div>
       )}
 
-      {/* Qty Selector */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-          {product.pricingType === 'PER_KG' ? 'Adjust Weight (kg)' : 'Quantity'}
-        </label>
+      {/* +/- qty stepper — hidden for products with preset weights */}
+      {!hasAllowedWeights && (
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+            {product.pricingType === 'PER_KG' ? 'Adjust Weight (kg)' : 'Quantity'}
+          </label>
 
-        <div className="flex items-center gap-0">
-          <button
-            onClick={() => setQty((q) => Math.max(minQty, q - 1))}
-            className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-l-xl text-gray-600 hover:bg-gray-50 transition-colors"
-            aria-label="Decrease"
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          <div className="w-14 h-11 flex items-center justify-center border-t border-b border-gray-200 text-sm font-semibold text-gray-900">
-            {qty}
+          <div className="flex items-center gap-0">
+            <button
+              onClick={() => setQty((q) => Math.max(minQty, q - 1))}
+              className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-l-xl text-gray-600 hover:bg-gray-50 transition-colors"
+              aria-label="Decrease"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <div className="w-14 h-11 flex items-center justify-center border-t border-b border-gray-200 text-sm font-semibold text-gray-900">
+              {qty}
+            </div>
+            <button
+              onClick={() => setQty((q) => q + 1)}
+              className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-r-xl text-gray-600 hover:bg-gray-50 transition-colors"
+              aria-label="Increase"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {qty > 1 && (
+              <span className="ml-4 text-sm text-gray-400">
+                Total:{' '}
+                <span className="font-semibold text-gray-700">{lineTotal}</span>
+              </span>
+            )}
           </div>
-          <button
-            onClick={() => setQty((q) => q + 1)}
-            className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-r-xl text-gray-600 hover:bg-gray-50 transition-colors"
-            aria-label="Increase"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-
-          {!isGoatMeat && qty > 1 && (
-            <span className="ml-4 text-sm text-gray-400">
-              Total: <span className="font-semibold text-gray-700">{lineTotal}</span>
-            </span>
-          )}
         </div>
-      </div>
+      )}
 
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-red-400'}`} />
