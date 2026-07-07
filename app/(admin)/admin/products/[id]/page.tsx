@@ -8,10 +8,11 @@ import { z } from 'zod'
 import { ArrowLeft, ImagePlus, X, Trash2, Upload } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-
+import { deleteProduct } from '@/features/products/products.api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import Swal from 'sweetalert2'
 import {
   Select,
   SelectContent,
@@ -127,7 +128,8 @@ export default function EditProductPage() {
           stockQty: found.stockQty ?? undefined,
           stockKg: found.stockKg ?? undefined,
           minWeightKg: found.minWeightKg && found.minWeightKg > 0 ? found.minWeightKg : undefined,
-          stepWeightKg: found.stepWeightKg && found.stepWeightKg > 0 ? found.stepWeightKg : undefined,
+          stepWeightKg:
+            found.stepWeightKg && found.stepWeightKg > 0 ? found.stepWeightKg : undefined,
           categoryId: found.category?.id ?? '',
           isActive: found.isActive,
         })
@@ -157,21 +159,24 @@ export default function EditProductPage() {
 
     console.log('📤 Payload to backend:', payload)
 
-    updateProduct.mutate({ id, payload }, {
-      onSuccess: (res: any) => {
-        if (res?.error) {
-          alert(res.error)
-          return
-        }
-        setSuccessMsg('Product updated successfully!')
-        setTimeout(() => setSuccessMsg(''), 3000)
-        if (res?.data) setProduct(res.data)
+    updateProduct.mutate(
+      { id, payload },
+      {
+        onSuccess: (res: any) => {
+          if (res?.error) {
+            alert(res.error)
+            return
+          }
+          setSuccessMsg('Product updated successfully!')
+          setTimeout(() => setSuccessMsg(''), 3000)
+          if (res?.data) setProduct(res.data)
+        },
+        onError: (err: any) => {
+          console.error(err)
+          alert('Failed to update product')
+        },
       },
-      onError: (err: any) => {
-        console.error(err)
-        alert('Failed to update product')
-      },
-    })
+    )
   }
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return
@@ -685,13 +690,38 @@ export default function EditProductPage() {
               </p>
               <button
                 type="button"
-                onClick={() => {
-                  if (!confirm(`Delete "${product.name}"? This will hide it from the store.`))
-                    return
-
-                  import('@/features/products/products.api').then(({ deleteProduct: del }) => {
-                    del(product.id).then(() => router.push('/admin/products'))
+                onClick={async () => {
+                  const result = await Swal.fire({
+                    title: 'Delete product?',
+                    text: `"${product.name}" will be permanently removed. This cannot be undone.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Delete',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true,
                   })
+                  if (!result.isConfirmed) return
+
+                  try {
+                    await deleteProduct(product.id)
+                    await Swal.fire({
+                      title: 'Deleted!',
+                      icon: 'success',
+                      timer: 1500,
+                      showConfirmButton: false,
+                    })
+                    router.push('/admin/products')
+                  } catch (error: any) {
+                    Swal.fire({
+                      title: 'Cannot Delete',
+                      text:
+                        error?.response?.data?.error ||
+                        'This product may already be attached to orders.',
+                      icon: 'error',
+                    })
+                  }
                 }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition"
               >

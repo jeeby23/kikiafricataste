@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {  Mail, Lock, Shield } from 'lucide-react'
+import { Mail, Lock, Shield, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +25,7 @@ export default function AdminLoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -53,7 +54,6 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
       <div className="w-full max-w-sm space-y-4">
-
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-black rounded-xl mb-3">
             <Shield className="w-6 h-6 text-white" />
@@ -94,19 +94,26 @@ export default function AdminLoginPage() {
                   <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                     Password
                   </Label>
-                  <Link href="/forgot-password"></Link>
+                  <Link href="/admin/forgot-password"></Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+                    className="pl-10 pr-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -119,7 +126,7 @@ export default function AdminLoginPage() {
               )}
               <div className="flex text-center justify-between py-2 ">
                 <Link
-                  href="/forgot-password"
+                  href="/admin/forgot-password    "
                   className="text-xs text-gray-600 hover:text-black transition-colors"
                 >
                   Forgot password?
@@ -148,7 +155,7 @@ export default function AdminLoginPage() {
               <p className="text-xs text-center text-gray-400">
                 Having trouble?{' '}
                 <a
-                  href="/reset-password"
+                  href="/admin/reset-password"
                   className="text-gray-600 hover:text-black underline underline-offset-2 transition-colors"
                 >
                   Reset your password

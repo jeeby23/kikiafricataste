@@ -108,84 +108,107 @@ export async function POST(req: NextRequest) {
   const deliveryFee = calculateDeliveryFee(totalWeightKg);
   const total = subtotal + deliveryFee;
 
-  const orderNumber = await generateOrderNumber();
-  const expiresAt = new Date(Date.now() + 45 * 60 * 1000);
+  // Retry loop — guards against order number collisions under concurrent requests
+  const MAX_RETRIES = 5;
+  let order: any = null;
 
-  // Save everything in one transaction
-  const order = await prisma.$transaction(async (tx: any) => {
-    const created = await tx.order.create({
-      data: {
-        orderNumber,
-        customerName: customerData.customerName,
-        customerEmail: customerEmail,
-        customerWhatsapp: customerData.customerWhatsapp || "",
-        deliveryAddress: customerData.deliveryAddress,
-        deliveryCity: customerData.deliveryPostCode,
-        deliveryState: customerData.deliveryState,
-        notes: customerData.notes,
-        subtotal,
-        deliveryFee,
-        total,
-        expiresAt,
-        items: { create: orderItems },
-      },
-      include: {
-        items: { include: { product: true } },
-      },
-    });
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const orderNumber = await generateOrderNumber();
+    const expiresAt = new Date(Date.now() + 45 * 60 * 1000);
 
-    for (const item of items) {
-      if (item.pricingType === "FIXED") {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQty: { decrement: item.quantity } },
+    try {
+      order = await prisma.$transaction(async (tx: any) => {
+        const created = await tx.order.create({
+          data: {
+            orderNumber,
+            customerName: customerData.customerName,
+            customerEmail: customerEmail,
+            customerWhatsapp: customerData.customerWhatsapp || "",
+            deliveryAddress: customerData.deliveryAddress,
+            deliveryCity: customerData.deliveryPostCode,
+            deliveryState: customerData.deliveryState,
+            notes: customerData.notes,
+            subtotal,
+            deliveryFee,
+            total,
+            expiresAt,
+            items: { create: orderItems },
+          },
+          include: {
+            items: { include: { product: true } },
+          },
         });
-      } else {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockKg: { decrement: item.weightKg } },
-        });
+
+        for (const item of items) {
+          if (item.pricingType === "FIXED") {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stockQty: { decrement: item.quantity } },
+            });
+          } else {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stockKg: { decrement: item.weightKg } },
+            });
+          }
+        }
+
+        return created;
+      });
+
+      break; // success — exit retry loop
+    } catch (e: any) {
+      if (e?.code === "P2002" && attempt < MAX_RETRIES) {
+        // Order number collision — regenerate and retry
+        continue;
       }
+      throw e; // not a collision, or out of retries — bubble up
     }
+  }
 
-    return created;
-  });
+  // Notify — wrapped in try/catch so a mail failure never breaks the order response
+  try {
+    await sendPaymentDetails({
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      subtotal: order.subtotal,
+      deliveryFee: order.deliveryFee,
+      total: order.total,
+      expiresAt: order.expiresAt,
+      items: order.items.map((i: any) => ({
+        productName: i.product.name,
+        pricingType: i.pricingType,
+        quantity: i.quantity,
+        weightKg: i.weightKg,
+        unitPrice: i.unitPrice,
+        subtotal: i.subtotal,
+      })),
+    });
+  } catch (e) {
+    console.error("Failed to send payment details email:", e);
+  }
 
-  // Notify — blocking temporarily to catch errors
-  await sendPaymentDetails({
-    orderNumber: order.orderNumber,
-    customerName: order.customerName,
-    customerEmail: order.customerEmail,
-    subtotal: order.subtotal,
-    deliveryFee: order.deliveryFee,
-    total: order.total,
-    expiresAt: order.expiresAt,
-    items: order.items.map((i: any) => ({
-      productName: i.product.name,
-      pricingType: i.pricingType,
-      quantity: i.quantity,
-      weightKg: i.weightKg,
-      unitPrice: i.unitPrice,
-      subtotal: i.subtotal,
-    })),
-  });
-
-  await sendNewOrderAlert({
-    orderNumber: order.orderNumber,
-    customerName: order.customerName,
-    customerEmail: order.customerEmail,
-    subtotal: order.subtotal,
-    deliveryFee: order.deliveryFee,
-    total: order.total,
-    items: order.items.map((i: any) => ({
-      productName: i.product.name,
-      pricingType: i.pricingType,
-      quantity: i.quantity,
-      weightKg: i.weightKg,
-      unitPrice: i.unitPrice,
-      subtotal: i.subtotal,
-    })),
-  });
+  try {
+    await sendNewOrderAlert({
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      subtotal: order.subtotal,
+      deliveryFee: order.deliveryFee,
+      total: order.total,
+      items: order.items.map((i: any) => ({
+        productName: i.product.name,
+        pricingType: i.pricingType,
+        quantity: i.quantity,
+        weightKg: i.weightKg,
+        unitPrice: i.unitPrice,
+        subtotal: i.subtotal,
+      })),
+    });
+  } catch (e) {
+    console.error("Failed to send new order alert email:", e);
+  }
 
   return ok(
     {

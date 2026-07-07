@@ -19,6 +19,8 @@ import { Truck, Package } from 'lucide-react'
 import { createOrder } from '@/features/orders/orders.api'
 import { toast } from 'sonner'
 import { calculateDeliveryFee } from '@/lib/format'
+import { checkoutSchema, CheckoutFormValues } from '@/schema/checkout.schema'
+
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -42,7 +44,7 @@ export default function CheckoutPage() {
     saveInfo: false,
   })
 
-  const [errors, setErrors] = useState<Partial<typeof form>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormValues, string>>>({})
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0)
 
@@ -57,111 +59,114 @@ export default function CheckoutPage() {
 
   const handleInputChange = (key: keyof typeof form, value: string | boolean) => {
     setForm((p) => ({ ...p, [key]: value }))
-    if (errors[key]) setErrors((p) => ({ ...p, [key]: '' }))
+    // Clear the error for this field as user types
+    if (errors[key as keyof CheckoutFormValues]) {
+      setErrors((p) => ({ ...p, [key]: '' }))
+    }
   }
 
-  const validateForm = () => {
-    const newErrors: Partial<typeof form> = {}
-    if (!form.firstName.trim()) newErrors.firstName = 'First name is required'
-    if (!form.lastName.trim()) newErrors.lastName = 'Last name is required'
-    if (!form.email.trim()) newErrors.email = 'Email is required'
-    if (!form.whatsappPhone.trim()) newErrors.whatsappPhone = 'WhatsApp number is required'
-    if (!form.recipientPhone.trim()) newErrors.recipientPhone = 'Recipient phone is required'
-    if (deliveryMethod === 'ship') {
-      if (!form.address.trim()) newErrors.address = 'Address is required'
-      if (!form.city.trim()) newErrors.city = 'City is required'
-      if (!form.postalCode.trim()) newErrors.postalCode = 'Postal code is required'
-    }
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  const validateForm = (): boolean => {
+  const result = checkoutSchema.safeParse({ ...form, deliveryMethod })
+
+  if (!result.success) {
+    const fieldErrors: Partial<Record<keyof CheckoutFormValues, string>> = {}
+    result.error.issues.forEach((issue) => {       // ← .issues not .errors
+      const field = issue.path[0] as keyof CheckoutFormValues
+      if (field && !fieldErrors[field]) {
+        fieldErrors[field] = issue.message
+      }
+    })
+    setErrors(fieldErrors)
+    return false
   }
+
+  setErrors({})
+  return true
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  if (!validateForm()) return
+    e.preventDefault()
+    if (!validateForm()) return
 
-  setIsSubmitting(true)
+    setIsSubmitting(true)
 
-  try {
-    const payload = {
-      customerName: `${form.firstName} ${form.lastName}`.trim(),
-      customerEmail: form.email.trim(),
-      customerWhatsapp: form.whatsappPhone || form.recipientPhone,
-      deliveryAddress: deliveryMethod === 'pickup' ? 'Store Pickup' : form.address.trim(),
-      deliveryPostCode: deliveryMethod === 'pickup' ? 'PICKUP' : form.postalCode.trim(),
-      deliveryCity: deliveryMethod === 'pickup' ? 'Store' : form.city.trim(),
-      deliveryState: deliveryMethod === 'pickup' ? 'Pickup' : form.state,
-      notes: '',
-      items: cartItems.map((item) => ({
-        productId: item.id,
-        pricingType: item.pricingType || 'FIXED',
-        quantity: item.pricingType === 'FIXED' ? item.qty : undefined,
-        weightKg: item.pricingType === 'PER_KG' ? item.qty : undefined,
-      })),
+    try {
+      const payload = {
+        customerName: `${form.firstName} ${form.lastName}`.trim(),
+        customerEmail: form.email.trim(),
+        customerWhatsapp: form.whatsappPhone || form.recipientPhone,
+        deliveryAddress: deliveryMethod === 'pickup' ? 'Store Pickup' : form.address.trim(),
+        deliveryPostCode: deliveryMethod === 'pickup' ? 'PICKUP' : form.postalCode.trim(),
+        deliveryCity: deliveryMethod === 'pickup' ? 'Store' : form.city.trim(),
+        deliveryState: deliveryMethod === 'pickup' ? 'Pickup' : form.state,
+        notes: '',
+        items: cartItems.map((item) => ({
+          productId: item.id,
+          pricingType: item.pricingType || 'FIXED',
+          quantity: item.pricingType === 'FIXED' ? item.qty : undefined,
+          weightKg: item.pricingType === 'PER_KG' ? item.qty : undefined,
+        })),
+      }
+
+      const res = await createOrder(payload)
+      if (res?.error) {
+        toast.error(res.error)
+        return
+      }
+
+      if (res?.data?.error) {
+        toast.error(res.data.error)
+        return
+      }
+
+      const orderNumber = res.data?.orderNumber || res.data?.id
+      if (!orderNumber) {
+        toast.error('Server did not return order number')
+        return
+      }
+
+      const orderData = {
+        orderNumber,
+        firstName: form.firstName,
+        customerName: payload.customerName,
+        customerEmail: payload.customerEmail,
+        customerWhatsapp: payload.customerWhatsapp,
+        deliveryAddress: payload.deliveryAddress,
+        deliveryCity: payload.deliveryCity,
+        deliveryState: payload.deliveryState,
+        deliveryPostCode: payload.deliveryPostCode,
+        items: cartItems,
+        subtotal: res.data.subtotal,
+        deliveryFee: res.data.deliveryFee,
+        total: res.data.total,
+        expiresAt: res.data.expiresAt,
+      }
+
+      localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderData))
+      clearCart()
+      toast.success('Order placed successfully! 🎉')
+      router.push(`/checkout/${orderNumber}`)
+    } catch (error: any) {
+      console.error('Checkout Error:', error)
+
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        'Failed to place order. Please try again.'
+
+      toast.error(errorMessage)
+    } finally {
+      setIsSubmitting(false)
     }
-
-    const res = await createOrder(payload)
-
-    // Handle structured error returned from API
-    if (res?.error) {
-      toast.error(res.error)
-      return
-    }
-
-    // Additional safety for different possible response shapes
-    if (res?.data?.error) {
-      toast.error(res.data.error)
-      return
-    }
-
-    const orderNumber = res.data?.orderNumber || res.data?.id
-    if (!orderNumber) {
-      toast.error('Server did not return order number')
-      return
-    }
-
-    // ... rest of your success logic (unchanged)
-    const orderData = {
-      orderNumber,
-      customerName: payload.customerName,
-      customerEmail: payload.customerEmail,
-      customerWhatsapp: payload.customerWhatsapp,
-      deliveryAddress: payload.deliveryAddress,
-      deliveryCity: payload.deliveryCity,
-      deliveryState: payload.deliveryState,
-      deliveryPostCode: payload.deliveryPostCode,
-      items: cartItems,
-      subtotal: res.data.subtotal,
-      deliveryFee: res.data.deliveryFee,
-      total: res.data.total,
-      expiresAt: res.data.expiresAt,
-    }
-console.log( "orderdata",orderData.deliveryFee)
-    localStorage.setItem(`order_${orderNumber}`, JSON.stringify(orderData))
-    clearCart()
-    toast.success('Order placed successfully! 🎉')
-    router.push(`/checkout/${orderNumber}`)
-  } catch (error: any) {
-    console.error('Checkout Error:', error)
-
-    // Enhanced error extraction for backend messages
-    const errorMessage =
-      error?.response?.data?.error ||
-      error?.response?.data?.message ||
-      error?.response?.data?.detail ||
-      error?.message ||
-      'Failed to place order. Please try again.'
-
-    toast.error(errorMessage)
-  } finally {
-    setIsSubmitting(false)
   }
-}
+
   const displayItems = cartItems.length > 0 ? cartItems : []
 
   return (
-    <div className="min-h-auto bg-white text-[#333333] font-sans antialiased ">
-      <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_42%] min-h-[calc(100vh-73px)] ">
+    <div className="min-h-auto bg-white text-[#333333] font-sans antialiased">
+      <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_42%] min-h-[calc(100vh-73px)]">
         <div className="p-6 md:p-12 lg:pr-16 bg-white space-y-8">
           <form onSubmit={handleSubmit} className="max-w-[620px] ml-auto w-full space-y-7">
 
@@ -176,10 +181,51 @@ console.log( "orderdata",orderData.deliveryFee)
                   placeholder="Mobile number of recipient"
                   value={form.recipientPhone}
                   onChange={(e) => handleInputChange('recipientPhone', e.target.value)}
-                  className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400 ${errors.recipientPhone ? 'border-red-500' : ''}`}
+                  className={`h-11 rounded-md border-gray-300 shadow-none placeholder:text-gray-400 text-[16px] focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400 ${errors.recipientPhone ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                 />
                 {errors.recipientPhone && (
                   <p className="text-xs text-red-500 mt-1">{errors.recipientPhone}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Name + Email — always shown, needed for both ship and pickup */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Input
+                    placeholder="Your name"
+                    value={form.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    className={`h-11 rounded-md border-gray-300 text-[16px] shadow-none placeholder:text-gray-400 ${errors.firstName ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
+                  />
+                  {errors.firstName && (
+                    <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>
+                  )}
+                </div>
+                <div>
+                  <Input
+                    placeholder="Last name"
+                    value={form.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    className={`h-11 rounded-md border-gray-300 text-[16px] shadow-none placeholder:text-gray-400 ${errors.lastName ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
+                  />
+                  {errors.lastName && (
+                    <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={`h-11 rounded-md text-[16px] border-gray-300 shadow-none placeholder:text-gray-400 ${errors.email ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
+                />
+                {errors.email && (
+                  <p className="text-xs text-red-500 mt-1">{errors.email}</p>
                 )}
               </div>
             </div>
@@ -191,7 +237,7 @@ console.log( "orderdata",orderData.deliveryFee)
                 <button
                   type="button"
                   onClick={() => setDeliveryMethod('ship')}
-                  className={`flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition ${deliveryMethod === 'ship' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-black'}`}
+                  className={`flex items-center justify-center gap-2 py-2 text-base font-medium rounded-md transition ${deliveryMethod === 'ship' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-black'}`}
                 >
                   <Truck className="w-5 h-5" />
                   Ship
@@ -207,13 +253,13 @@ console.log( "orderdata",orderData.deliveryFee)
               </div>
             </div>
 
-            {/* Address fields */}
+            {/* Address fields — ship only */}
             {deliveryMethod === 'ship' && (
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500 font-normal">Country/Region</label>
                   <Select defaultValue="GBP">
-                    <SelectTrigger className="w-full h-11 border-gray-300 rounded-md focus:ring-0 focus:ring-offset-0 text-sm text-gray-700">
+                    <SelectTrigger className="w-full h-11 border-gray-300 rounded-md focus:ring-0 focus:ring-offset-0 text-[16px] text-gray-700">
                       <SelectValue placeholder="United Kingdom" />
                     </SelectTrigger>
                     <SelectContent>
@@ -222,67 +268,36 @@ console.log( "orderdata",orderData.deliveryFee)
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Input
-                      placeholder="Your name"
-                      value={form.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.firstName ? 'border-red-500' : ''}`}
-                    />
-                    {errors.firstName && (
-                      <p className="text-xs text-red-500 mt-1">{errors.firstName}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Input
-                      placeholder="Last name"
-                      value={form.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.lastName ? 'border-red-500' : ''}`}
-                    />
-                    {errors.lastName && (
-                      <p className="text-xs text-red-500 mt-1">{errors.lastName}</p>
-                    )}
-                  </div>
-                </div>
-
                 <div>
                   <Input
                     placeholder="Address you are sending package to"
                     value={form.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
-                    className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.address ? 'border-red-500' : ''}`}
+                    className={`h-11 rounded-md text-[16px] border-gray-300 shadow-none placeholder:text-gray-400 ${errors.address ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                   />
-                  {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
+                  {errors.address && (
+                    <p className="text-xs text-red-500 mt-1">{errors.address}</p>
+                  )}
                 </div>
 
-                <div>
-                  <Input
-                    placeholder="Email"
-                    value={form.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.email ? 'border-red-500' : ''}`}
-                  />
-                  {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
-                </div>
-
-                <div className="grid grid-cols-[1fr_1fr_1fr] gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Input
                       placeholder="City"
                       value={form.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.city ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 shadow-none text-[16px] placeholder:text-gray-400 ${errors.city ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                     />
-                    {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
+                    {errors.city && (
+                      <p className="text-xs text-red-500 mt-1">{errors.city}</p>
+                    )}
                   </div>
                   <div>
                     <Input
                       placeholder="Postal code"
                       value={form.postalCode}
                       onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                      className={`h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 ${errors.postalCode ? 'border-red-500' : ''}`}
+                      className={`h-11 rounded-md border-gray-300 text-[16px] shadow-none placeholder:text-gray-400 ${errors.postalCode ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                     />
                     {errors.postalCode && (
                       <p className="text-xs text-red-500 mt-1">{errors.postalCode}</p>
@@ -299,9 +314,12 @@ console.log( "orderdata",orderData.deliveryFee)
                   placeholder="Your phone number for whatsapp order updates"
                   value={form.whatsappPhone}
                   onChange={(e) => handleInputChange('whatsappPhone', e.target.value)}
-                  className="h-11 rounded-md border-gray-300 shadow-none text-sm placeholder:text-gray-400 pr-10"
+                  className={`h-11 rounded-md border-gray-300 shadow-none text-[16px] placeholder:text-gray-400 pr-10 ${errors.whatsappPhone ? 'border-red-500 focus-visible:ring-red-400' : ''}`}
                 />
                 <HelpCircle className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" />
+                {errors.whatsappPhone && (
+                  <p className="text-xs text-red-500 mt-1">{errors.whatsappPhone}</p>
+                )}
               </div>
 
               <div className="flex items-center space-x-2 py-1">
@@ -335,8 +353,19 @@ console.log( "orderdata",orderData.deliveryFee)
                     fill="none"
                     viewBox="0 0 24 24"
                   >
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
                   </svg>
                   Processing Order...
                 </div>
@@ -347,7 +376,8 @@ console.log( "orderdata",orderData.deliveryFee)
           </form>
         </div>
 
-        <div className="bg-[#fff9f9] p-6 md:p-12 lg:pl-12 border-l border-gray-100">
+        {/* Order Summary */}
+        <div className="bg-gray-200/70 p-6 md:p-12 lg:pl-12 border-l border-gray-100">
           <div className="max-w-[440px] mr-auto w-full space-y-6">
 
             <div className="space-y-4">
@@ -365,7 +395,6 @@ console.log( "orderdata",orderData.deliveryFee)
                       <p className="text-[11px] text-gray-400 font-normal">{item.detail}</p>
                     </div>
                   </div>
-                  {/* item.price is in pounds — display directly */}
                   <span className="text-xs font-semibold text-gray-900 whitespace-nowrap">
                     £{(item.price * item.qty).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
@@ -379,12 +408,12 @@ console.log( "orderdata",orderData.deliveryFee)
                 placeholder="Discount code or gift card"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-                className="h-10 rounded-md border-gray-300 bg-white shadow-none text-sm placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-gray-400"
+                className="h-10 rounded-md border-gray-300 bg-white shadow-none placeholder:text-gray-400 focus-visible:ring-1 text-[16px] focus-visible:ring-gray-400"
               />
               <Button
                 type="button"
                 onClick={() => discount && setDiscountApplied(true)}
-                className="h-10 px-4 bg-[#f5e6e6] hover:bg-[#ebd7d7] text-gray-700 text-xs font-medium rounded-md shadow-none transition"
+                className="h-10 px-4 bg-gray-300/70 hover:bg-[#ebd7d7] text-gray-700 text-xs font-medium rounded-md shadow-none transition"
               >
                 Apply
               </Button>

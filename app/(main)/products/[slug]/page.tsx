@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useProduct } from '@/features/products/products.query'
 import { useCartStore } from '@/store/cartStore'
 import ProductSkeleton from '@/components/products/ProductSkeleton'
-import ProductGallery from "@/components/products/ ProductGallery"
+import ProductGallery from '@/components/products/ ProductGallery'
 import ProductInfo from '@/components/products/ProductInfo'
 import RelatedProducts from '@/components/products/RelatedProducts'
 import { toast } from 'sonner'
@@ -22,39 +22,76 @@ export default function Page() {
   const [added, setAdded] = useState(false)
 
   if (isLoading) return <ProductSkeleton />
-  if (!product) return <div className="min-h-screen flex items-center justify-center text-gray-400">Product not found</div>
+  if (!product)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        Product not found
+      </div>
+    )
 
   const images = product.images || []
   const isPerKg = product.pricingType === 'PER_KG'
 
-  // === Price in pounds ===
   const priceInPence = isPerKg ? (product.pricePerKg ?? 0) : (product.price ?? 0)
   const priceInPounds = priceInPence / 100
 
-  const formattedPrice = isPerKg 
-    ? `£${priceInPounds.toFixed(2)}/kg` 
+  const formattedPrice = isPerKg
+    ? `£${priceInPounds.toFixed(2)}/kg`
     : `£${priceInPounds.toFixed(2)}`
 
-  const inStock = isPerKg 
-    ? (product.stockKg ?? 0) > 0 
-    : (product.stockQty ?? 0) > 0
+  const inStock = isPerKg ? (product.stockKg ?? 0) > 0 : (product.stockQty ?? 0) > 0
 
-  // === NEW: Minimum Order Logic ===
-  const getMinimumQty = (): number => {
+  // Goat meat: specific non-uniform weights via chip selection
+  const GOAT_MEAT_ALLOWED_WEIGHTS = [2, 5, 10, 20]
+
+  const isGoatMeat = (): boolean => {
+    const nameLower = product.name.toLowerCase()
+    return nameLower.includes('goat meat') || nameLower.includes('goat')
+  }
+
+  const getAllowedWeights = (): number[] | null => {
+    if (isGoatMeat() && isPerKg) return GOAT_MEAT_ALLOWED_WEIGHTS
+    return null
+  }
+
+  const allowedWeights = getAllowedWeights()
+
+  // Step-based products: +/- jumps by this amount, qty must be a multiple
+  const getStepSize = (): number => {
+    if (allowedWeights) return 1 // goat meat uses chips, step irrelevant
     const nameLower = product.name.toLowerCase()
     const categoryName = product.category?.name?.toLowerCase() || ''
-
     if (categoryName.includes('ponmo') || nameLower.includes('ponmo')) return 10
     if (nameLower.includes('smoked abo') || nameLower.includes('abo fish')) return 6
     if (nameLower.includes('smoked catfish') || nameLower.includes('catfish')) return 4
     if (nameLower.includes('eja kika') || nameLower.includes('smoked eja')) return 16
-    return 1 
+    return 1
   }
 
-  const minQty = getMinimumQty()
+  const stepSize = getStepSize()
+  const minQty = allowedWeights ? allowedWeights[0] : stepSize
 
   const handleAddToCart = () => {
-    if (qty < minQty) {
+    // Goat meat: must be one of the allowed weights
+    if (allowedWeights && !allowedWeights.includes(qty)) {
+      toast.error(`Please select a weight for ${product.name}`, {
+        description: `Available: ${allowedWeights.join('kg, ')}kg`,
+      })
+      return
+    }
+
+    // Step products: qty must be a non-zero multiple of stepSize
+    if (!allowedWeights && stepSize > 1) {
+      if (qty < minQty || qty % stepSize !== 0) {
+        toast.error(`${product.name} must be ordered in multiples of ${stepSize}`, {
+          description: `e.g. ${stepSize}, ${stepSize * 2}, ${stepSize * 3}...`,
+        })
+        return
+      }
+    }
+
+    // Regular products: respect minimum
+    if (!allowedWeights && stepSize === 1 && qty < minQty) {
       toast.error(`Minimum order for this item is ${minQty} pieces`, {
         description: `You selected ${qty} — please increase quantity.`,
       })
@@ -66,8 +103,8 @@ export default function Page() {
       name: product.name,
       image: images[0]?.url || '/placeholder.png',
       price: priceInPounds,
-      qty: qty,                   
-      pricingType: product.pricingType || 'FIXED',   
+      qty,
+      pricingType: product.pricingType || 'FIXED',
       totalPrice: priceInPounds * qty,
       detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
     })
@@ -85,7 +122,12 @@ export default function Page() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
           <div className="md:col-span-7 lg:col-span-6">
-            <ProductGallery images={images} activeImage={activeImage} setActiveImage={setActiveImage} productName={product.name} />
+            <ProductGallery
+              images={images}
+              activeImage={activeImage}
+              setActiveImage={setActiveImage}
+              productName={product.name}
+            />
           </div>
 
           <div className="md:col-span-5 lg:col-span-5 md:sticky md:top-24 self-start">
@@ -98,17 +140,17 @@ export default function Page() {
               inStock={inStock}
               handleAddToCart={handleAddToCart}
               added={added}
-              minQty={minQty}   // ← Pass minimum to ProductInfo if needed
+              minQty={minQty}
+              allowedWeights={allowedWeights}
+              stepSize={stepSize}
             />
           </div>
         </div>
       </section>
 
-      {/* Description + How to use section - unchanged */}
       <section className="border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
-            {/* Description */}
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-widest text-[#c9a96e] mb-4">
                 About this product
@@ -155,29 +197,12 @@ export default function Page() {
               <h3 className="text-2xl font-semibold text-gray-900 mb-4 leading-snug">
                 Serving &amp; preparation
               </h3>
-
               <ol className="space-y-5">
                 {[
-                  {
-                    step: '01',
-                    title: 'Store correctly',
-                    body: 'Keep refrigerated or frozen immediately on arrival. Use fresh portions within 2–3 days; freeze the rest for up to 3 months.',
-                  },
-                  {
-                    step: '02',
-                    title: 'Prepare your ingredients',
-                    body: 'Rinse under cold water if desired. Season generously with your favourite African spices — iru (locust bean), uziza, or crayfish all pair beautifully.',
-                  },
-                  {
-                    step: '03',
-                    title: 'Cook with confidence',
-                    body: 'Works perfectly in soups, stews, pepper soups, and grills. Simmer low and slow for depth of flavour, or grill over high heat for a charred finish.',
-                  },
-                  {
-                    step: '04',
-                    title: 'Serve & enjoy',
-                    body: 'Pair with eba, pounded yam, jollof rice, or fufu. Best enjoyed fresh and shared.',
-                  },
+                  { step: '01', title: 'Store correctly', body: 'Keep refrigerated or frozen immediately on arrival. Use fresh portions within 2–3 days; freeze the rest for up to 3 months.' },
+                  { step: '02', title: 'Prepare your ingredients', body: 'Rinse under cold water if desired. Season generously with your favourite African spices — iru (locust bean), uziza, or crayfish all pair beautifully.' },
+                  { step: '03', title: 'Cook with confidence', body: 'Works perfectly in soups, stews, pepper soups, and grills. Simmer low and slow for depth of flavour, or grill over high heat for a charred finish.' },
+                  { step: '04', title: 'Serve & enjoy', body: 'Pair with eba, pounded yam, jollof rice, or fufu. Best enjoyed fresh and shared.' },
                 ].map(({ step, title, body }) => (
                   <li key={step} className="flex gap-4">
                     <span className="text-[11px] font-bold text-[#c9a96e] mt-0.5 shrink-0 w-6">{step}</span>
@@ -194,7 +219,7 @@ export default function Page() {
       </section>
 
       <section className="border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-10">
           <RelatedProducts slug={product.slug} limit={4} />
         </div>
       </section>

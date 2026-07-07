@@ -2,79 +2,124 @@
 
 import Link from 'next/link'
 import { useAdminOrders } from '@/features/orders/orders.query'
+
 export const dynamic = 'force-dynamic'
+
 export default function AdminDashboard() {
   const { data, isLoading } = useAdminOrders(1)
 
   const orders = data?.orders ?? []
 
-  const totalOrders = orders.length
-  const pendingOrders = orders.filter((o) => o.status === 'PENDING_PAYMENT').length
-  const paidOrders = orders.filter((o) => o.status === 'CONFIRMED').length
-  const cancelledOrders = orders.filter((o) => o.status === 'CANCELLED').length
+  const totalOrders = data?.total ?? 0
+
+  const pendingOrders = orders.filter(
+    (order) => order.status === 'PENDING_PAYMENT'
+  ).length
+
+  const confirmedOrders = orders.filter(
+    (order) => order.status === 'CONFIRMED'
+  ).length
+
+  const cancelledOrders = orders.filter(
+    (order) => order.status === 'CANCELLED'
+  ).length
+
+  // Revenue from confirmed orders on the current fetched page
   const totalRevenue = orders
-    .filter((o) => o.status === 'CONFIRMED')
-    .reduce((sum, o) => sum + o.total, 0)
+    .filter((order) => order.status === 'CONFIRMED')
+    .reduce((sum, order) => sum + Number(order.total), 0)
+
+  const averageOrderValue =
+    confirmedOrders > 0 ? totalRevenue / confirmedOrders : 0
+
+  const formatGBP = (amount: number) =>
+    new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
 
   return (
-    <div className="space-y-6 p-3 sm:p-4 md:p-6">
-      <h1 className="text-xl sm:text-2xl font-semibold text-black">Dashboard</h1>
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 lg:px-8">
+      <h1 className="text-3xl font-bold text-gray-900">
+        Dashboard
+      </h1>
 
-      {/* Stats grid — 2 cols on mobile, 3 on sm, 5 on md+ */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
-        <div className="bg-white p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Total Orders</h3>
-          <p className="text-xl sm:text-2xl font-bold text-gray-600 mt-1">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="rounded-xl border bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">Total Orders</p>
+          <h2 className="mt-2 text-3xl font-bold text-gray-900">
             {isLoading ? '...' : totalOrders}
-          </p>
+          </h2>
         </div>
 
-        <div className="bg-yellow-50 p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Pending</h3>
-          <p className="text-xl sm:text-2xl font-bold text-yellow-600 mt-1">
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-5 shadow-sm">
+          <p className="text-sm text-yellow-700">Pending Payment</p>
+          <h2 className="mt-2 text-3xl font-bold text-yellow-600">
             {isLoading ? '...' : pendingOrders}
-          </p>
+          </h2>
         </div>
 
-        <div className="bg-green-50 p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Paid</h3>
-          <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1">
-            {isLoading ? '...' : paidOrders}
-          </p>
+        <div className="rounded-xl border border-green-200 bg-green-50 p-5 shadow-sm">
+          <p className="text-sm text-green-700">Confirmed</p>
+          <h2 className="mt-2 text-3xl font-bold text-green-600">
+            {isLoading ? '...' : confirmedOrders}
+          </h2>
         </div>
 
-        <div className="bg-red-50 p-4 sm:p-5 rounded-lg shadow">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Cancelled</h3>
-          <p className="text-xl sm:text-2xl font-bold text-red-600 mt-1">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 shadow-sm">
+          <p className="text-sm text-red-700">Cancelled</p>
+          <h2 className="mt-2 text-3xl font-bold text-red-600">
             {isLoading ? '...' : cancelledOrders}
-          </p>
+          </h2>
         </div>
 
-        {/* Revenue card spans full width on mobile so the number isn't cramped */}
-        <div className="col-span-2 sm:col-span-1 bg-white p-4 sm:p-5 rounded-lg shadow border border-green-200">
-          <h3 className="text-gray-500 text-xs sm:text-sm">Revenue (Paid)</h3>
-          <p className="text-xl sm:text-2xl font-bold text-green-700 mt-1">
-            {isLoading ? '...' : `£${totalRevenue.toLocaleString()}`}
-          </p>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <p className="text-sm text-emerald-700">Revenue</p>
+          <h2 className="mt-2 break-words text-2xl font-bold text-emerald-700">
+            {isLoading ? '...' : formatGBP(totalRevenue/100)}
+          </h2>
         </div>
+
+        {/* <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+          <p className="text-sm text-blue-700">Average Order</p>
+          <h2 className="mt-2 break-words text-2xl font-bold text-blue-700">
+            {isLoading ? '...' : formatGBP(averageOrderValue)}
+          </h2>
+        </div> */}
       </div>
 
-      {/* Quick-link cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      {/* Quick Links */}
+      <div className="grid gap-5 md:grid-cols-2">
         <Link
           href="/admin/orders"
-          className="bg-white p-5 sm:p-6 rounded-lg shadow hover:shadow-lg transition"
+          className="rounded-xl border bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
         >
-          <h3 className="font-semibold text-gray-700 text-sm sm:text-base">📦 View All Orders</h3>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">Manage customer orders & payments</p>
+          <div className="mb-3 text-3xl">📦</div>
+
+          <h3 className="text-lg font-semibold text-gray-900">
+            Manage Orders
+          </h3>
+
+          <p className="mt-2 text-sm text-gray-600">
+            View, update and manage customer orders and payment statuses.
+          </p>
         </Link>
 
         <Link
           href="/admin/products"
-          className="bg-white p-5 sm:p-6 rounded-lg shadow hover:shadow-lg transition"
+          className="rounded-xl border bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
         >
-          <h3 className="font-semibold text-gray-700 text-sm sm:text-base">🛍️ Manage Products</h3>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">Add, edit or remove products</p>
+          <div className="mb-3 text-3xl">🛍️</div>
+
+          <h3 className="text-lg font-semibold text-gray-900">
+            Manage Products
+          </h3>
+
+          <p className="mt-2 text-sm text-gray-600">
+            Add, edit or remove products from your store.
+          </p>
         </Link>
       </div>
     </div>

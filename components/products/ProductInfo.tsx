@@ -13,6 +13,8 @@ interface ProductInfoProps {
   handleAddToCart: () => void
   added: boolean
   minQty: number
+  allowedWeights?: number[] | null
+  stepSize?: number
 }
 
 export default function ProductInfo({
@@ -25,14 +27,13 @@ export default function ProductInfo({
   handleAddToCart,
   added,
   minQty,
+  allowedWeights,
+  stepSize = 1,
 }: ProductInfoProps) {
   const lineTotal = `£${(price * qty).toFixed(2)}`
-
-  const isGoatMeat = product.name.toLowerCase().includes('goat meat')
-  const presets = [2, 5, 10, 20]
-
-  // Only show minimum text for products that actually have a minimum > 1
-  const showMinQty = minQty > 1
+  const hasAllowedWeights = allowedWeights && allowedWeights.length > 0
+  const isStepProduct = !hasAllowedWeights && stepSize > 1
+  const showMinQty = minQty > 1 && !hasAllowedWeights && !isStepProduct
 
   return (
     <div className="space-y-7">
@@ -48,19 +49,29 @@ export default function ProductInfo({
 
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold text-gray-900">
-          {isGoatMeat ? `£${(price * qty).toFixed(2)}` : formattedPrice}
+          {hasAllowedWeights || isStepProduct
+            ? `£${(price * qty).toFixed(2)}`
+            : formattedPrice}
         </span>
         {product.pricingType === 'PER_KG' && (
           <span className="text-sm text-gray-400">
-            {isGoatMeat ? `for ${qty}kg (£${price.toFixed(2)}/kg)` : 'per kilogram'}
+            {hasAllowedWeights
+              ? `for ${qty}kg (£${price.toFixed(2)}/kg)`
+              : 'per kilogram'}
           </span>
         )}
       </div>
 
-      {/* Minimum Order Text - Only show for special products */}
       {showMinQty && (
         <p className="text-sm text-gray-500 font-medium">
           Minimum order: <strong>{minQty} pieces</strong>
+        </p>
+      )}
+
+      {isStepProduct && (
+        <p className="text-sm text-gray-500 font-medium">
+          Ordered in multiples of <strong>{stepSize}</strong>
+          {product.pricingType !== 'PER_KG' ? ' pieces' : 'kg'}
         </p>
       )}
 
@@ -72,13 +83,14 @@ export default function ProductInfo({
 
       <div className="border-t border-gray-100" />
 
-      {isGoatMeat && (
+      {/* Goat meat: chip selector */}
+      {hasAllowedWeights && (
         <div className="space-y-2">
           <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Select Weight Option
+            Select Weight
           </label>
           <div className="flex gap-2">
-            {presets.map((weight) => (
+            {allowedWeights!.map((weight) => (
               <button
                 key={weight}
                 type="button"
@@ -93,43 +105,49 @@ export default function ProductInfo({
               </button>
             ))}
           </div>
+          <p className="text-xs text-gray-400">
+            Only the above weights are available for this product.
+          </p>
         </div>
       )}
 
-      {/* Qty Selector */}
-      <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-          {product.pricingType === 'PER_KG' ? 'Adjust Weight (kg)' : 'Quantity'}
-        </label>
+      {/* Step-based and regular products: +/- stepper */}
+      {!hasAllowedWeights && (
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+            {product.pricingType === 'PER_KG' ? 'Adjust Weight (kg)' : 'Quantity'}
+          </label>
 
-        <div className="flex items-center gap-0">
-          <button
-            onClick={() => setQty((q) => Math.max(minQty, q - 1))}
-            className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-l-xl text-gray-600 hover:bg-gray-50 transition-colors"
-            aria-label="Decrease"
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          <div className="w-14 h-11 flex items-center justify-center border-t border-b border-gray-200 text-sm font-semibold text-gray-900">
-            {qty}
+          <div className="flex items-center gap-0">
+            <button
+              onClick={() => setQty((q) => Math.max(minQty, q - stepSize))}
+              disabled={qty <= minQty}
+              className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-l-xl text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Decrease"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <div className="w-14 h-11 flex items-center justify-center border-t border-b border-gray-200 text-sm font-semibold text-gray-900">
+              {qty}
+            </div>
+            <button
+              onClick={() => setQty((q) => q + stepSize)}
+              className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-r-xl text-gray-600 hover:bg-gray-50 transition-colors"
+              aria-label="Increase"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {qty > minQty && (
+              <span className="ml-4 text-sm text-gray-400">
+                Total:{' '}
+                <span className="font-semibold text-gray-700">{lineTotal}</span>
+              </span>
+            )}
           </div>
-          <button
-            onClick={() => setQty((q) => q + 1)}
-            className="w-11 h-11 flex items-center justify-center border border-gray-200 rounded-r-xl text-gray-600 hover:bg-gray-50 transition-colors"
-            aria-label="Increase"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-
-          {!isGoatMeat && qty > 1 && (
-            <span className="ml-4 text-sm text-gray-400">
-              Total: <span className="font-semibold text-gray-700">{lineTotal}</span>
-            </span>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* Stock status */}
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-red-400'}`} />
         <span className={`text-sm font-medium ${inStock ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -137,7 +155,6 @@ export default function ProductInfo({
         </span>
       </div>
 
-      {/* Add to cart button */}
       <button
         onClick={handleAddToCart}
         disabled={!inStock || added}
@@ -163,7 +180,7 @@ export default function ProductInfo({
       </button>
 
       <p className="text-[11px] text-gray-400 text-center">
-        🚚 Free delivery on orders over £10 · Secure checkout
+        🚚 Free delivery on orders over £70 · Secure checkout
       </p>
     </div>
   )

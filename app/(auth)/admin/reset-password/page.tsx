@@ -59,7 +59,7 @@ function ResetPasswordForm() {
         setError(data.error);
       } else {
         setDone(true);
-        setTimeout(() => router.push("/login"), 3000);
+        setTimeout(() => router.push("/admin/login"), 3000);
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -73,7 +73,7 @@ function ResetPasswordForm() {
       <Card className="border-0 shadow-xl shadow-gray-200/60">
         <CardContent className="py-10 text-center">
           <p className="text-red-500 text-sm mb-4">Invalid or missing reset token.</p>
-          <Link href="/forgot-password" className="text-sm text-black underline underline-offset-2">
+          <Link href="/admin/forgot-password" className="text-sm text-black underline underline-offset-2">
             Request a new reset link
           </Link>
         </CardContent>
@@ -233,7 +233,7 @@ export default function ResetPasswordPage() {
 
         <div className="text-center">
           <Link
-            href="/login"
+            href="/admin/login"
             className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-black transition-colors"
           >
             <ArrowLeft className="w-3 h-3" />

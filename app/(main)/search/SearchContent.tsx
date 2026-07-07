@@ -110,7 +110,7 @@ export default function SearchPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search goat meat, catfish, ponmo..."
-              className="w-full pl-14 pr-32 py-4 rounded-full bg-white text-gray-800 text-sm tracking-wide focus:outline-none focus:ring-2 focus:ring-[#c9a96e] shadow-xl"
+              className="w-full pl-14 pr-32 py-4 rounded-full bg-white text-gray-800  tracking-wide text-base focus:outline-none focus:ring-2 focus:ring-[#c9a96e] shadow-xl"
             />
             <button
               type="submit"

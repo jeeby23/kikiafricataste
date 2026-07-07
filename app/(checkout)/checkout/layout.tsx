@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { ShoppingCart } from 'lucide-react'
 import { Bokor } from 'next/font/google'
 import { useCartStore } from '@/store/cartStore'
-
+import FloatingWhatsApp from '@/components/common/FloatingWhatsApp'
 const bokorFont = Bokor({
   subsets: ['latin'],
   weight: '400',
@@ -51,6 +51,7 @@ const cartCount = useCartStore((s) => s.items.length)
       </nav>
 
       <main className="pt-20">{children}</main>
+    <FloatingWhatsApp/>
     </div>
   )
 }

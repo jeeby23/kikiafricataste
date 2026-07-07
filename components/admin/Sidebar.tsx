@@ -19,6 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from '@/components/ui/sidebar'
 
 import Image from 'next/image'
@@ -27,7 +28,7 @@ import { Bokor } from 'next/font/google'
 const bokorFont = Bokor({ subsets: ['latin'], weight: '400' })
 
 const NAV_ITEMS = [
-  { path: '/admin', label: 'Dashboard',  },
+  { path: '/admin', label: 'Dashboard' },
   { path: '/admin/products', label: 'Products' },
   { path: '/admin/orders', label: 'Orders' },
 ]
@@ -36,16 +37,12 @@ export default function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const logout = useAuthStore((state) => state.logout)
-
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
-
-  useEffect(() => {
-    setIsMobileOpen(false)
-  }, [pathname])
-
+  const { setOpenMobile } = useSidebar()
   const handleLogout = async (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent sidebar interference
+    e.stopPropagation()
+    setOpenMobile(false)
 
+    await new Promise((resolve) => setTimeout(resolve, 250))
     const result = await Swal.fire({
       title: 'Log out?',
       text: 'You will need to sign in again to access the admin dashboard.',
@@ -56,9 +53,9 @@ export default function AppSidebar() {
       confirmButtonColor: '#000000',
       cancelButtonColor: '#6b7280',
       reverseButtons: true,
-      heightAuto: false,           // Important for mobile
+      heightAuto: false, // Important for mobile
       customClass: {
-        popup: 'swal-mobile-fix',  // We'll target this in CSS if needed
+        popup: 'swal-mobile-fix', // We'll target this in CSS if needed
       },
     })
 
@@ -109,14 +106,18 @@ export default function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="gap-0.5">
               {NAV_ITEMS.map((item) => {
-                const isActive = pathname === item.path || 
+                const isActive =
+                  pathname === item.path ||
                   (item.path !== '/admin' && pathname?.startsWith(item.path))
 
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={item.path} className="flex items-center gap-3">
-                        {/* <item.icon className="w-5 h-5" /> */}
+                      <Link
+                        href={item.path}
+                        onClick={() => setOpenMobile(false)}
+                        className="flex items-center gap-3"
+                      >
                         <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -138,10 +139,9 @@ export default function AppSidebar() {
         </SidebarMenuButton>
       </SidebarFooter>
 
-      {/* Mobile Close Button */}
       <button
-        onClick={() => setIsMobileOpen(false)}
-        className="lg:hidden absolute top-4 right-4 z-[100] p-2 text-gray-500 hover:text-black bg-white rounded-full shadow-md"
+        onClick={() => setOpenMobile(false)}
+        className=" block lg:hidden absolute top-4 right-4 z-[100] p-2 text-gray-500 hover:text-black bg-white rounded-full shadow-md"
       >
         <X size={22} />
       </button>

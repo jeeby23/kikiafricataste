@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow } from "next/font/google";
 import Header from "@/components/header";
-
+import FloatingWhatsApp from '@/components/common/FloatingWhatsApp'
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -23,6 +23,7 @@ export default function MainLayout({
     <div className={`${barlow.variable} min-h-screen flex flex-col font-barlow`}>
       <Header />
       {children}
+    <FloatingWhatsApp/>
     </div>
   );
 }
