@@ -98,6 +98,7 @@ export async function sendPaymentDetails(order: {
           <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
           <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
           <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+          <p style="margin:4px 0">Sort Code: <strong>${process.env.STORE_SORT_CODE}</strong></p>
           <p style="margin:4px 0">Amount: <strong>${formatPrice(order.total)}</strong></p>
           <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
         </div>
@@ -152,6 +153,7 @@ export async function sendNewOrderAlert(order: {
           <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
           <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
           <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+           <p style="margin:4px 0">Sort Code: <strong>${process.env.STORE_SORT_CODE}</strong></p>
           <p style="margin:4px 0">Expected Amount: <strong>${formatPrice(order.total)}</strong></p>
           <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
         </div>
