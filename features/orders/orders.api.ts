@@ -49,6 +49,19 @@ export const cancelOrder = async (id: string) => {
   return res.data;
 };
 
+export const getAllAdminOrdersForReport = async (
+  status?: string,
+  from?: string,
+  to?: string
+) => {
+  const params = new URLSearchParams({ page: "1", limit: "1000" });
+  if (status) params.append("status", status);
+  if (from) params.append("from", from);
+  if (to) params.append("to", to);
+
+  const res = await axios.get<OrdersResponse>(`/admin/order?${params}`);
+  return res.data.data;
+};
 // export const estimateShipping = async (
 //   items: { productId: string; pricingType: string; quantity: number }[]
 // ) => {

@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useOrderById, useConfirmOrder, useCancelOrder } from '@/features/orders/orders.query'
 import PageLoader from '@/components/shared/PageLoader'
+import Swal from 'sweetalert2'
 
 const fmtPounds = (v: number) => `£${Number(v || 0).toFixed(2)}`
 const fmtPence = (v: number) => `£${(Number(v || 0) / 100).toFixed(2)}`
-
 const toPounds = (pence: number) => Number(pence || 0) / 100
 
 export default function OrderDetailPage() {
@@ -25,21 +25,75 @@ export default function OrderDetailPage() {
   const [isConfirming, setIsConfirming] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!order) return
+
+    const result = await Swal.fire({
+      title: 'Confirm this order?',
+      text: `Order #${order.orderNumber} will be marked as confirmed and the customer will be notified.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, confirm it',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) return
+
     setIsConfirming(true)
     confirmOrder.mutate(order.id, {
-      onSuccess: () => alert('Order confirmed successfully!'),
+      onSuccess: () =>
+        Swal.fire({
+          title: 'Order Confirmed!',
+          text: 'The customer has been notified.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+        }),
+      onError: () =>
+        Swal.fire({
+          title: 'Failed',
+          text: 'Could not confirm the order. Please try again.',
+          icon: 'error',
+        }),
       onSettled: () => setIsConfirming(false),
     })
   }
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (!order) return
-    if (!confirm('Are you sure you want to cancel this order?')) return
+
+    const result = await Swal.fire({
+      title: 'Cancel this order?',
+      text: `Order #${order.orderNumber} will be cancelled. This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, cancel it',
+      cancelButtonText: 'Go back',
+      reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) return
+
     setIsCancelling(true)
     cancelOrder.mutate(order.id, {
-      onSuccess: () => alert('Order cancelled successfully!'),
+      onSuccess: () =>
+        Swal.fire({
+          title: 'Order Cancelled',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+        }),
+      onError: () =>
+        Swal.fire({
+          title: 'Failed',
+          text: 'Could not cancel the order. Please try again.',
+          icon: 'error',
+        }),
       onSettled: () => setIsCancelling(false),
     })
   }
@@ -54,16 +108,12 @@ export default function OrderDetailPage() {
   const isConfirmed = order.status === 'CONFIRMED'
   const isCancelled = order.status === 'CANCELLED'
 
-  // 1. Detect if this is a Store Pickup order safely
-  const isPickup = 
-    order.deliveryPostCode === 'PICKUP' || 
-    order.deliveryAddress?.toLowerCase().includes('pickup') || 
+  const isPickup =
+    order.deliveryPostCode === 'PICKUP' ||
+    order.deliveryAddress?.toLowerCase().includes('pickup') ||
     order.deliveryAddress?.toLowerCase().includes('store pickup')
 
-  // 2. Compute monetary values based on fulfillment method
   const subtotalPounds = toPounds(order.subtotal)
-  
-  // Force delivery fee to 0 if pickup, otherwise fallback to database value
   const deliveryPounds = isPickup ? 0 : toPounds(order.deliveryFee)
   const trueTotal = subtotalPounds + deliveryPounds
 
@@ -71,7 +121,6 @@ export default function OrderDetailPage() {
     <div className="min-h-screen bg-gray-50 text-gray-700">
       <div className="max-w-6xl mx-auto p-6">
         <div className="mb-8 space-y-6">
-          {/* Back button */}
           <Link href="/admin/orders">
             <button className="inline-flex items-center gap-2 text-gray-600 hover:text-black transition">
               <ArrowLeft size={20} />
@@ -79,10 +128,8 @@ export default function OrderDetailPage() {
             </button>
           </Link>
 
-          {/* Order information */}
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-bold">Order #{order.orderNumber}</h1>
-
             <p className="text-sm text-gray-500">
               Placed on{' '}
               {new Date(order.createdAt).toLocaleDateString('en-GB', {
@@ -94,7 +141,6 @@ export default function OrderDetailPage() {
             </p>
           </div>
 
-          {/* Status */}
           <div>
             <Badge
               variant={isConfirmed ? 'default' : isCancelled ? 'destructive' : 'secondary'}
@@ -104,7 +150,6 @@ export default function OrderDetailPage() {
             </Badge>
           </div>
 
-          {/* Actions */}
           {isPending && (
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
@@ -123,13 +168,13 @@ export default function OrderDetailPage() {
                 className="sm:w-auto w-full"
               >
                 <XCircle className="mr-2 h-4 w-4" />
-                Cancel Order
+                {isCancelling ? 'Cancelling...' : 'Cancel Order'}
               </Button>
             </div>
           )}
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left — items */}
           <div className="lg:col-span-7 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Order Items</h2>
@@ -149,8 +194,8 @@ export default function OrderDetailPage() {
                       <p className="font-medium">{item.product.name}</p>
                       <p className="text-sm text-gray-500">
                         {item.pricingType === 'PER_KG'
-                          ? `${item.weightKg} kg × £${item.unitPrice}/kg`
-                          : `${item.quantity} × £${item.unitPrice}`}
+                          ? `${item.weightKg} kg × ${fmtPounds(toPounds(item.unitPrice))}/kg`
+                          : `${item.quantity} × ${fmtPounds(toPounds(item.unitPrice))}`}
                       </p>
                     </div>
                     <div className="text-right font-medium">
@@ -162,7 +207,6 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Right */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Customer Information</h2>
@@ -177,6 +221,7 @@ export default function OrderDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">WhatsApp</span>
+
                   <a
                     href={`https://wa.me/${(order.customerWhatsapp ?? '').replace(/\D/g, '')}`}
                     className="text-blue-600 hover:underline"
@@ -187,7 +232,6 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            {/* Dynamic Fulfillment / Delivery Box */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 {isPickup ? (
@@ -212,7 +256,8 @@ export default function OrderDetailPage() {
                   <>
                     <p>{order.deliveryAddress}</p>
                     <p>
-                      {order.deliveryCity}{order.deliveryState ? `, ${order.deliveryState}` : ''}
+                      {order.deliveryCity}
+                      {order.deliveryState ? `, ${order.deliveryState}` : ''}
                     </p>
                   </>
                 )}
@@ -220,7 +265,6 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
               <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
               <div className="space-y-3 text-sm">
@@ -230,7 +274,7 @@ export default function OrderDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Delivery Fee</span>
-                  <span className={isPickup ? "text-green-600 font-semibold" : ""}>
+                  <span className={isPickup ? 'text-green-600 font-semibold' : ''}>
                     {isPickup ? 'Free (Pickup)' : fmtPounds(deliveryPounds)}
                   </span>
                 </div>

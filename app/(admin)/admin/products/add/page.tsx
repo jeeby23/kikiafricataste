@@ -43,7 +43,6 @@ export default function AddProductPage() {
   const isActive = watch('isActive')
   const categoryId = watch('categoryId')
 
-  // === Price Conversion (pounds ↔ pence) ===
   const poundsToPence = (val: unknown): number | undefined => {
     if (val === undefined || val === null || val === '') return undefined
     const num = typeof val === 'string' ? parseFloat(val) : Number(val)

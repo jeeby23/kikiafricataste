@@ -9,7 +9,8 @@ import { useEffect, useState } from 'react'
 const PICKUP_LOCATION = {
   name: 'Kiki African Taste — UK Store',
   address: '14 Brixton Market Row, Brixton, London SW9 8PR, United Kingdom',
-  mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2482.5!2d-0.112!3d51.463!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487604b8c5b5c5b5%3A0x8c5b5c5b5c5b5c5b!2sBrixton+Market!5e0!3m2!1sen!2suk!4v1234567890', 
+  mapEmbed:
+    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2482.5!2d-0.112!3d51.463!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487604b8c5b5c5b5%3A0x8c5b5c5b5c5b5c5b!2sBrixton+Market!5e0!3m2!1sen!2suk!4v1234567890',
 }
 
 export default function OrderConfirmation() {
@@ -45,13 +46,13 @@ export default function OrderConfirmation() {
       </div>
     )
   }
-  
+
   const isPickup = order.deliveryPostCode === 'PICKUP' || order.deliveryAddress === 'Store Pickup'
 
   const subtotal = order.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0)
 
   const rawFee = order.deliveryFee || 0
-  const deliveryFeePounds = isPickup ? 0 : (rawFee > 100 ? penceToPounds(rawFee) : rawFee)
+  const deliveryFeePounds = isPickup ? 0 : rawFee > 100 ? penceToPounds(rawFee) : rawFee
   const displayTotal = isPickup ? subtotal : subtotal + deliveryFeePounds
 
   return (
@@ -70,7 +71,9 @@ export default function OrderConfirmation() {
                 </div>
               </div>
               <p className="text-lg text-gray-600">
-                {isPickup ? 'Your order is confirmed for pickup.' : 'Your order is confirmed for shipping.'}
+                {isPickup
+                  ? 'Your order is confirmed for pickup.'
+                  : 'Your order is confirmed for shipping.'}
               </p>
             </div>
 
@@ -87,7 +90,7 @@ export default function OrderConfirmation() {
                 />
                 <div className="absolute top-4 left-4 bg-white rounded-2xl shadow-lg p-5 max-w-xs">
                   <div className="flex gap-3">
-                    <MapPin className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
+                    <MapPin className="w-5 h-5 text-red-500 mt-1 shrink-0" />
                     <div>
                       <p className="font-semibold">Pickup Location</p>
                       <p className="text-sm text-gray-600 mt-1 leading-tight">
@@ -145,7 +148,9 @@ export default function OrderConfirmation() {
                   <p className="text-gray-500">{order.customerEmail || order.email}</p>
                 </div>
                 <div>
-                  <p className="font-medium mb-1">{isPickup ? 'Pickup Location' : 'Delivery Method'}</p>
+                  <p className="font-medium mb-1">
+                    {isPickup ? 'Pickup Location' : 'Delivery Method'}
+                  </p>
                   <p className="text-gray-600 flex items-center gap-1.5">
                     {isPickup ? (
                       PICKUP_LOCATION.address
@@ -161,14 +166,18 @@ export default function OrderConfirmation() {
                   <p>Bank Transfer • £{displayTotal.toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="font-medium mb-1">{isPickup ? 'Billing Address' : 'Shipping Address'}</p>
+                  <p className="font-medium mb-1">
+                    {isPickup ? 'Billing Address' : 'Shipping Address'}
+                  </p>
                   <p className="text-gray-600">
                     {isPickup ? (
                       order.address || 'Store Pickup'
                     ) : (
                       <>
-                        {order.deliveryAddress}<br />
-                        {order.deliveryCity}, {order.deliveryPostCode}<br />
+                        {order.deliveryAddress}
+                        <br />
+                        {order.deliveryCity}, {order.deliveryPostCode}
+                        <br />
                         {order.deliveryState}
                       </>
                     )}
@@ -185,7 +194,7 @@ export default function OrderConfirmation() {
               <div className="space-y-6">
                 {order.items.map((item: any, index: number) => (
                   <div key={index} className="flex gap-4">
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                       <Image src={item.image} alt={item.name} fill className="object-cover" />
                     </div>
                     <div className="flex-1">

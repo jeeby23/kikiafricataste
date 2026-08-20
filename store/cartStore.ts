@@ -11,7 +11,7 @@ export interface CartItem {
   qty: number
   totalPrice: number
   detail?: string
-  pricingType: 'FIXED' | 'PER_KG'   // ← This must be saved
+  pricingType: 'FIXED' | 'PER_KG'
 }
 
 interface CartState {
