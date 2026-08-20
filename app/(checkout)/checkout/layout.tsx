@@ -12,16 +12,13 @@ const bokorFont = Bokor({
 })
 
 
-
 export default function CheckoutLayout({ children }: { children: React.ReactNode }) {
   const { items } = useCartStore()
 type CartItem = {
-
   qty: number
 
 }
 const cartCount = useCartStore((s) => s.items.length)
-
   return (
     <div className="min-h-screen bg-[#f8f7f4]">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">

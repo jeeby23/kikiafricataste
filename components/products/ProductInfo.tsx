@@ -49,15 +49,11 @@ export default function ProductInfo({
 
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold text-gray-900">
-          {hasAllowedWeights || isStepProduct
-            ? `£${(price * qty).toFixed(2)}`
-            : formattedPrice}
+          {hasAllowedWeights || isStepProduct ? `£${(price * qty).toFixed(2)}` : formattedPrice}
         </span>
         {product.pricingType === 'PER_KG' && (
           <span className="text-sm text-gray-400">
-            {hasAllowedWeights
-              ? `for ${qty}kg (£${price.toFixed(2)}/kg)`
-              : 'per kilogram'}
+            {hasAllowedWeights ? `for ${qty}kg (£${price.toFixed(2)}/kg)` : 'per kilogram'}
           </span>
         )}
       </div>
@@ -140,13 +136,20 @@ export default function ProductInfo({
 
             {qty > minQty && (
               <span className="ml-4 text-sm text-gray-400">
-                Total:{' '}
-                <span className="font-semibold text-gray-700">{lineTotal}</span>
+                Total: <span className="font-semibold text-gray-700">{lineTotal}</span>
               </span>
             )}
           </div>
         </div>
       )}
+      {product.pricingType === 'PER_KG' && (
+        <p className="text-[11px] text-gray-400 leading-relaxed">
+          ⚖️ <strong className="text-gray-500">Weight (KG) Information:</strong> The weight in KG
+          is included with the packaging/box and is also included in the item purchased. Please
+          check the product details for the applicable weight.
+        </p>
+      )}
+
 
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-red-400'}`} />
@@ -180,7 +183,8 @@ export default function ProductInfo({
       </button>
 
       <p className="text-[11px] text-gray-400 text-center">
-        🚚 Free delivery on orders over £70 · Secure checkout
+        🚚 We deliver on Tuesdays, Wednesdays, and Thursdays only. No weekend deliveries are
+        available.
       </p>
     </div>
   )

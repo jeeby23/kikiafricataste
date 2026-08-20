@@ -109,6 +109,7 @@ export default function Page() {
       detail: isPerKg ? `${qty} kg` : `${qty} pcs`,
     })
 
+    
     toast.success('Added to cart', {
       description: `${product.name} (${qty}${isPerKg ? 'kg' : ' pieces'}) added successfully`,
     })

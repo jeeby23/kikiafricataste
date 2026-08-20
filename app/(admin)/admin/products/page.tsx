@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, FilePenLine, MoreHorizontal } from 'lucide-react'
+import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
 import {
   useAdminProducts,
   useToggleProduct,
@@ -118,7 +118,6 @@ export default function ProductsPage() {
 
   const { data, isLoading, isError } = useAdminProducts(page, search)
   const toggleProduct = useToggleProduct()
-  // const draftProduct = useDraftProduct()
   const deleteProduct = useDeleteProduct()
 
   const products = data?.products ?? []
@@ -196,7 +195,6 @@ export default function ProductsPage() {
     })
   }
 
-  // Skeleton — adapts to mobile (5 cols) vs desktop (6 cols)
   const skeletonRows = [...Array(6)].map((_, i) => (
     <tr key={i} className="border-b border-gray-50">
       {[...Array(6)].map((_, j) => (
@@ -232,7 +230,6 @@ export default function ProductsPage() {
 
       {/* Table card */}
       <div className="w-full max-w-[390px] md:max-w-none md:w-full mx-auto md:mx-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* ── MOBILE CARD LIST (< md) ── */}
         <div className="md:hidden divide-y divide-gray-100 ">
           {isLoading &&
             [...Array(4)].map((_, i) => (
@@ -448,7 +445,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Pagination - Improved & consistent with other admin pages */}
+     
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-1 pt-2">
           <div className="flex items-center gap-1">

@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) return err("Invalid input");
-
   const { email, password } = parsed.data;
 
   const admin = await prisma.admin.findUnique({ where: { email } });
