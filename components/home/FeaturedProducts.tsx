@@ -9,12 +9,9 @@ import { useSearchStore } from '@/store/search.store';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProducts } from '@/features/products/products.api';
 import FeaturedProductsSkeleton from './FeaturedProductsSkeleton';
-
-// ✅ GSAP
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-// ✅ shadcn pagination
 import {
   Pagination,
   PaginationContent,
@@ -48,7 +45,6 @@ const FeaturedProducts = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement[]>([]);
 
-  // ✅ Prefetch next page (FIXED KEY)
   useEffect(() => {
     if (page < totalPages) {
       queryClient.prefetchQuery({
@@ -58,7 +54,6 @@ const FeaturedProducts = () => {
     }
   }, [page, totalPages, search, queryClient]);
 
-  // ✅ GSAP Animation
   useEffect(() => {
     if (isLoading || products.length === 0) return;
 
