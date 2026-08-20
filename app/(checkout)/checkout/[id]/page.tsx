@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 
 const PICKUP_LOCATION = {
   name: 'Kiki African Taste — UK Store',
-  address: '14 Brixton Market Row, Brixton, London SW9 8PR, United Kingdom',
+  address: 'Belfast, United Kingdom',
   mapEmbed:
     'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2482.5!2d-0.112!3d51.463!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487604b8c5b5c5b5%3A0x8c5b5c5b5c5b5c5b!2sBrixton+Market!5e0!3m2!1sen!2suk!4v1234567890',
 }
