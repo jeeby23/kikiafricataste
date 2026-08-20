@@ -98,15 +98,14 @@ export async function sendPaymentDetails(order: {
           </tr>
         </table>
 
-        <div style="background:#fffaf4; border: 1px solid #eaddcd; border-left: 4px solid #c9a96e; padding: 20px; margin: 32px 0; border-radius: 8px;">
-          <h4 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Bank Payment Details</h4>
-          <table style="width: 100%; font-size: 14px;">
-            <tr><td style="padding: 4px 0; color: #7c756e;">Bank:</td><td style="padding: 4px 0; font-weight: 600; color: #1a1a1a;">${process.env.STORE_BANK_NAME}</td></tr>
-            <tr><td style="padding: 4px 0; color: #7c756e;">Account Number:</td><td style="padding: 4px 0; font-weight: 600; color: #1a1a1a; font-size: 15px; letter-spacing: 0.5px;">${process.env.STORE_ACCOUNT_NUMBER}</td></tr>
-            <tr><td style="padding: 4px 0; color: #7c756e;">Account Name:</td><td style="padding: 4px 0; font-weight: 600; color: #1a1a1a;">${process.env.STORE_ACCOUNT_NAME}</td></tr>
-            <tr><td style="padding: 4px 0; color: #7c756e;">Amount:</td><td style="padding: 4px 0; font-weight: bold; color: #c9a96e; font-size: 15px;">${formatPrice(order.total)}</td></tr>
-            <tr><td style="padding: 4px 0; color: #7c756e;">Reference:</td><td style="padding: 4px 0; font-weight: bold; color: #1a1a1a; background: #f3ece3; padding: 2px 6px; border-radius: 4px; display: inline-block;">${order.orderNumber}</td></tr>
-          </table>
+        <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
+          <h3 style="margin-top:0">Payment Details</h3>
+          <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
+          <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
+          <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+          <p style="margin:4px 0">Sort Code: <strong>${process.env.STORE_SORT_CODE}</strong></p>
+          <p style="margin:4px 0">Amount: <strong>${formatPrice(order.total)}</strong></p>
+          <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
         </div>
 
         <div style="background:#fff5f5; border: 1px solid #fcdede; padding: 16px; border-radius: 8px; color: #c9302c; font-size: 14px; text-align: center; font-weight: 500;">
@@ -157,15 +156,14 @@ export async function sendNewOrderAlert(order: {
           <p style="color: #ffffff; margin: 4px 0 0 0; font-size: 14px; opacity: 0.9;">ID: ${order.orderNumber}</p>
         </div>
 
-        <div style="background:#fffaf4; border: 1px solid #eaddcd; border-left: 4px solid #c9a96e; padding: 20px; margin-bottom: 32px; border-radius: 8px;">
-          <h4 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Expected Payment Destination</h4>
-          <table style="width: 100%; font-size: 14px;">
-            <tr><td style="padding: 3px 0; color: #7c756e;">Bank:</td><td style="padding: 3px 0; font-weight: 600; color: #1a1a1a;">${process.env.STORE_BANK_NAME}</td></tr>
-            <tr><td style="padding: 3px 0; color: #7c756e;">Account No:</td><td style="padding: 3px 0; font-weight: 600; color: #1a1a1a;">${process.env.STORE_ACCOUNT_NUMBER}</td></tr>
-            <tr><td style="padding: 3px 0; color: #7c756e;">Holder:</td><td style="padding: 3px 0; font-weight: 600; color: #1a1a1a;">${process.env.STORE_ACCOUNT_NAME}</td></tr>
-            <tr><td style="padding: 3px 0; color: #7c756e;">Amount:</td><td style="padding: 3px 0; font-weight: 700; color: #c9a96e; font-size: 15px;">${formatPrice(order.total)}</td></tr>
-            <tr><td style="padding: 3px 0; color: #7c756e;">Reference:</td><td style="padding: 3px 0; font-weight: 700; color: #1a1a1a;">${order.orderNumber}</td></tr>
-          </table>
+        <div style="background:#f9f9f9; border-left: 4px solid #c8a96e; padding: 16px; margin: 24px 0">
+          <h3 style="margin-top:0">Check this account for payment</h3>
+          <p style="margin:4px 0">Bank: <strong>${process.env.STORE_BANK_NAME}</strong></p>
+          <p style="margin:4px 0">Account Number: <strong>${process.env.STORE_ACCOUNT_NUMBER}</strong></p>
+          <p style="margin:4px 0">Account Name: <strong>${process.env.STORE_ACCOUNT_NAME}</strong></p>
+           <p style="margin:4px 0">Sort Code: <strong>${process.env.STORE_SORT_CODE}</strong></p>
+          <p style="margin:4px 0">Expected Amount: <strong>${formatPrice(order.total)}</strong></p>
+          <p style="margin:4px 0">Reference: <strong>${order.orderNumber}</strong></p>
         </div>
 
         <h3 style="border-bottom: 2px solid #f3ece3; padding-bottom: 6px; color: #1a1a1a; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px;">Customer Details</h3>
